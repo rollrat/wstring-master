@@ -978,8 +978,9 @@ namespace Utility {
 			// 메모리 낭비가 심하지만, 이 함수를 사용한다는 것 자체가
 			// 이미 메모리에 신경을 쓰지 않는 것이라 해석되므로 그냥 할당함
 			// 미리 세는 것보다 이게더 빠를거 아녀
-			wchar_t      **position = new wchar_t*[m_length];
-			size_t        *poslen   = new size_t[m_length];
+			size_t         alloclen = max <= m_length ? max : m_length;
+			wchar_t      **position = new wchar_t*[alloclen];
+			size_t        *poslen   = new size_t[alloclen];
 			size_t         count = 0;
 			wchar_t *ptr = m_ptr, *tptr;
 			
@@ -1034,8 +1035,9 @@ namespace Utility {
 		
 		SplitsArray SplitReverseHelper(const wchar_t *src, size_t srclen, size_t max)
 		{
-			wchar_t      **position = new wchar_t*[m_length];
-			size_t        *poslen = new size_t[m_length];
+			size_t         alloclen = max <= m_length ? max : m_length;
+			wchar_t      **position = new wchar_t*[alloclen];
+			size_t        *poslen = new size_t[alloclen];
 			size_t         count = 0;
 			size_t         nowlen = m_length;
 			wchar_t *ptr = m_ptr, *tptr, *prev = m_last + 1;
@@ -1539,7 +1541,8 @@ namespace Utility {
 		// 치환한 문자열 집합을 가져옵니다.
 		WString ReplaceHelper(const wchar_t *src, const wchar_t *dest, size_t srclen, size_t destlen, size_t max)
 		{
-			wchar_t      **position = new wchar_t*[m_length];
+			size_t         alloclen = max <= m_length ? max : m_length;
+			wchar_t      **position = new wchar_t*[alloclen];
 			size_t         count = 0;
 			size_t         sourceLength;
 			size_t         index = 0;
@@ -1726,14 +1729,14 @@ namespace Utility {
 		}
 		
 		// [first, last]를 가져옵니다.
-		// (단, last가 0보다 작을 경우 뒤에서 부터 가져옴)
+		// (단, last가 0보다 작거나 같을 경우 뒤에서 부터 가져옴)
 		WString Slice(size_t first, size_t last)
 		{
-			size_t pure = (int)last >= 0 ? last : ~last + 1;
-			if (first > m_length || pure > m_length || first > pure)
+			size_t pure = (int)last > 0 ? last : ~last + 1;
+			if (first > m_length || pure > m_length || (first > pure && last > 0))
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			if ((int)last >= 0)
+			if ((int)last > 0)
 			{
 				return WString((const wchar_t *)(m_ptr + first), last - first + 1);
 			}
@@ -1750,6 +1753,78 @@ namespace Utility {
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
 			return WString((const wchar_t *)(m_ptr + skip), m_length - (skip << 1));
+		}
+
+		// jmp만큼 건너뛰면서 밟은 문자들을 가져온다.
+		WString Slicing(size_t jmp, size_t starts = 0, bool jmpstarts = false)
+		{
+			if (starts >= m_length)
+				throw(new StringException(StringErrorCode::ComparasionSizeException));
+
+			if ( jmp > 0 && jmp < m_length )
+			{
+				jmp += 1;
+
+				size_t   retlen = (m_length - starts) / jmp + ((m_length - starts) % jmp && !jmpstarts);
+				wchar_t* collect = new wchar_t[retlen+1];
+				size_t   jmpcnt = (jmpstarts ? jmp-1 : 0) + starts;
+
+				for ( size_t i = 0 ; jmpcnt < m_length; i++, jmpcnt += jmp )
+				{
+					collect[i] = m_ptr[jmpcnt];
+				}
+
+				collect[retlen] = 0;
+
+				return WString(collect, retlen);
+			}
+			else if ( jmp == 0 )
+			{
+				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
+			}
+			else
+			{
+				return WString();
+			}
+		}
+
+		// skip만큼 건너뛰면서 건너뛴 문자들을 가져온다.
+		WString SlicingInverse(size_t skip, size_t starts = 0, bool skipstarts = false)
+		{
+			if (starts >= m_length)
+				throw(new StringException(StringErrorCode::ComparasionSizeException));
+
+			if ( skip > 0 && skip < m_length )
+			{
+				skip += 1;
+				
+				size_t   retlen = m_length - (m_length - starts) / skip - ((m_length - starts) % skip && !skipstarts);
+				wchar_t* collect = new wchar_t[retlen+1];
+				wchar_t* colptr = collect;
+				size_t   skipcnt = (skipstarts ? 0 : 1) + starts;
+				size_t   skip2 = (skip - 1) * sizeof(wchar_t);
+
+				for ( ; skipcnt < m_length; skipcnt += skip )
+				{
+					if ( skipcnt + skip < m_length )
+						memcpy(colptr, m_ptr + skipcnt, skip2);
+					else
+						memcpy(colptr, m_ptr + skipcnt, (m_length - skipcnt) << 1);
+					colptr += skip - 1;
+				}
+
+				collect[retlen] = 0;
+				
+				return WString(collect, retlen);
+			}
+			else if ( skip == 0 )
+			{
+				return WString();
+			}
+			else
+			{
+				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
+			}
 		}
 
 	private:
@@ -1948,21 +2023,19 @@ namespace Utility {
 				ptr++;
 			
 			if (*ptr == L'.')
-			{
 				ptr++;
 
-				while (iswdigit(*ptr) && *ptr)
-					ptr++;
+			while (iswdigit(*ptr) && *ptr)
+				ptr++;
 
-				if (*ptr == L'e' || *ptr == L'E')
+			if (*ptr == L'e' || *ptr == L'E')
+			{
+				ptr++;
+				if (*ptr == L'+' || *ptr == L'-' || iswdigit(*ptr))
 				{
 					ptr++;
-					if (*ptr == L'+' || *ptr == L'-' || iswdigit(*ptr))
-					{
+					while (iswdigit(*ptr) && *ptr)
 						ptr++;
-						while (iswdigit(*ptr) && *ptr)
-							ptr++;
-					}
 				}
 			}
 
@@ -2245,9 +2318,6 @@ namespace Utility {
 			std::swap(m_length, refer.m_length);
 		}
 
-		// 클론화 ( this가 클론이 됨 )
-		// 수정: Clone함수로 Clone으로 만들어야함.
-		// 이 함수는 클래스를 복제한다.
 		void operator=(const WString& refer)
 		{
 			if (m_ptr != nullptr)
@@ -2260,12 +2330,8 @@ namespace Utility {
 
 		inline void Clone(const WString& refer)
 		{
-			// 댕글링 포인터가 될 경우는 없다.
-			// 기존의 포인터가 사라질 경우는 없기 때문.
-			// 보통은 m_ptr이 null이기 때문이다.
-			// 또한, m_ptr가 null이 아닌 경우에 이 함수가
-			// 호출되었다는 것은 뭔가 치환 연산에 사용된다는 뜻이므로
-			// delete 해봤자 손실임
+			if (m_ptr != nullptr)
+				delete[] m_ptr;
 			m_ptr = nullptr;
 			srp = true;
 			m_ptr = refer.m_ptr;
