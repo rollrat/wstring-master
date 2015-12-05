@@ -2,7 +2,7 @@
 
 This library provides an easy-to-use string analysis method for **Windows System**. We are promoting the maximum optimization of all methods.
 
- ![alt tag](https://github.com/rollrat/wstring-master/tree/master/full_view.png)
+![alt tag](https://github.com/rollrat/wstring-master/blob/master/full_view.png)
 
 ### Targeted Compiler
 All of functions that are included in this library, has a wchar_t type, this type is, will vary in size by the compiler, 
