@@ -1764,8 +1764,9 @@ namespace Utility {
 			if ( jmp > 0 && jmp + starts < m_length )
 			{
 				jmp += 1;
-
-				size_t   retlen = (m_length - starts) / jmp + ((m_length - starts) % jmp && jmpstarts);
+				
+				size_t   reallen = m_length - starts;
+				size_t   retlen = reallen / jmp + (reallen % jmp && jmpstarts);
 				wchar_t* collect = new wchar_t[retlen+1];
 				size_t   jmpcnt = (jmpstarts ? 0 : jmp-1) + starts;
 
@@ -1798,7 +1799,8 @@ namespace Utility {
 			{
 				skip += 1;
 				
-				size_t   retlen = m_length - starts - (m_length - starts) / skip - ((m_length - starts) % skip && skipstarts);
+				size_t   reallen = m_length - starts;
+				size_t   retlen = reallen - reallen / skip - (reallen % skip && skipstarts);
 				wchar_t* collect = new wchar_t[retlen+1];
 				wchar_t* colptr = collect;
 				size_t   skipcnt = (skipstarts ? 1 : 0) + starts;
