@@ -10,7 +10,7 @@ This project has been developed in visual-studio-2013.
 
 ### Necessary improvement part In WString
 In `WString.h`, using class `StringReferencePutWith` is used for direct pointer passed in the constructor.
-The reason for using this approach is to avoid duplicate assignments to be made in case the string 
+The reason for using this approach is to avoid duplicate allocation to be made in case the string 
 pointer conversion when using this class from another class.  It is used in order to completely attributed 
 the string to the class, which means that it is released in the destructor. This code is example of this.
 ``` c++
@@ -198,7 +198,7 @@ WString("   rollrat  ").TrimStart(); // -> "rollrat  "
 WString("   rollrat  ").TrimEnd(); // -> "   rollrat"
 WString("   rollrat  ").Trim(); // -> "rollrat"
 WString("wwwrollratwww").Trim(); // -> "rollrat"
-WString("ssskkkrrrkkkttt").Trim("kkk") // -> "sssrrrttt"
+WString("ssskkkrrrkkkttt").Trim("kkk"); // -> "sssrrrttt"
 ```
 These functions returns string what is deleted duplicate characters. `TrimStart` is removed from the starting position, `TrimEnd` is deleted from the end position, and `Trim` remove both. But, the entered type is wide-string, delete all the strings included.
 ### Count
@@ -267,7 +267,7 @@ WString("123").PadRight(2); // -> "123"
 WString("123").PadLeft(4,L'k'); // -> "k123"
 WString("123").PadRight(4,L'k'); // -> "123k"
 WString("123").PadMiddle(6); // -> "  123 "
-WString("123").PadMiddle(6,L'k',false'); // -> "k123kk"
+WString("123").PadMiddle(6,L'k',false); // -> "k123kk"
 ```
 This function set string to each right and left ends, and fill the rest of the space by the pad. If the length is less than the length of the string, existing string is returned. The `PadMiddle` function sorts the strings in the middle. If `lefts` is true, string are aligned concentrated on the left.
 ### InsertLeft, InsertRight
@@ -323,14 +323,14 @@ Reverse string.
 ### Slice
 ``` c++
 WString Slice(first, last);
-WString Slice(skip); // == Slice(skip, -(int)skip - 1);
+WString Slice(skip); // == Slice(skip, -(int)skip);
 ```
 ``` c++
 WString("[rollrat]").Slice(1, 7); // -> "rollrat"
 WString("[rollrat]").Slice(1, -1); // -> "rollrat"
 WString("[rollrat]").Slice(1); // -> "rollrat"
 ```
-This function sets a string of `last` from the `first` location. If last is less than 0, by the end of the string to -1.
+This function sets a string of `last` from the `first` location. If last is less equal than 0, by the end of the string to 0.
 ### LineSplit (size_t, ...)
 ``` c++
 Lines LineSplit(size_t len, [wstr front, [wstr end]]); // none-of olny end
@@ -387,7 +387,7 @@ This function sets a hash to seed. Built-in seed is a prime number.
 ``` c++
 WString("0123456").IsNumeric(); // -> true
 WString("0123456.e+3").IsNumeric(); // -> true
-WString("0123456e+3").IsNumeric(); // -> false
+WString("0123456e+3").IsNumeric(); // -> true
 WString("0123E13").IsHexDigit(); // -> true
 WString("0x01234").IsHexDigit(); // -> true
 ```
