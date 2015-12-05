@@ -1811,7 +1811,7 @@ namespace Utility {
 					if ( skipcnt + skip < m_length )
 						memcpy(colptr, m_ptr + skipcnt, skip2);
 					else
-						memcpy(colptr, m_ptr + skipcnt, (m_length - skipcnt) << 1);
+						memcpy(colptr, m_ptr + skipcnt, (m_length - skipcnt) * sizeof(wchar_t));
 					colptr += skip - 1;
 				}
 
