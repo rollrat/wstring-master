@@ -1773,15 +1773,17 @@ namespace Utility {
 				size_t   countLen = starts;
 				size_t   putLen2 = len * sizeof(wchar_t);
 
-				for ( ; countLen < m_length; countLen += chunkLen )
+				size_t   copyLen = m_length - lastRemain;
+
+				for ( ; countLen < copyLen; countLen += chunkLen )
 				{
 					memcpy(colptr, m_ptr + countLen, putLen2);
 					colptr += len;
 				}
 				
-				if ( remain && lastRemain && lastRemain < jmp )
+				if ( remain && lastRemain )
 				{
-					memcpy(colptr, m_ptr + countLen, lastRemain);
+					memcpy(colptr, m_ptr + countLen, lastRemain * sizeof(wchar_t));
 				}
 
 				collect[totalLen] = 0;
