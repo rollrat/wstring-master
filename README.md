@@ -331,18 +331,18 @@ WString("[rollrat]").Slice(1, -1); // -> "rollrat"
 WString("[rollrat]").Slice(1); // -> "rollrat"
 ```
 This function sets a string of `last` from the `first` location. If last is less equal than 0, by the end of the string to 0.
-### Slicing, SlicingInverse
+### Slicing
 ``` c++
-WString Slicing(jmp, [starts] = 0);
-WString SlicingInverse(skip, [starts] = 0);
+WString Slicing(jmp, [starts = 0, [len = 1, [remain = true]]]);
 ```
 ``` c++
-WString("a%%b%%c%%d%%e%%").Slicing(2); // -> "abcde"
-WString("%%a%%b%%c%%d%%e").Slicing(2,2); // -> "abcde"
-WString("01%23%45%67%").SlicingInverse(2); // -> "01234567"
-WString("%01%23%45%67").SlicingInverse(2,1); // -> "01234567"
+WString("01234567").Slicing(1); // -> "0246"
+WString("%0123456").Slicing(1,1); // -> "0246"
+WString("%01%23%45%67").Slicing(1,1,2); // -> "01234567"
+WString("%01%23%45%6789").Slicing(1,1,2); // -> "012345679"
+WString("%01%23%45%6789").Slicing(1,1,2,false); // -> "01234567"
 ```
-`Slicing` function gets character moved by `jmp` times from starts. `SlicingInverse` gets opposite part of Slicing(jmp, jmp).
+`Slicing` function gets string by len moved by `jmp` times from starts. If `remain` is true, and gets also remain part.
 ### LineSplit (size_t, ...)
 ``` c++
 Lines LineSplit(size_t len, [wstr front, [wstr end]]); // none-of olny end
