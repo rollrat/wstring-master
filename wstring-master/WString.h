@@ -1760,7 +1760,7 @@ namespace Utility {
 			if ( starts >= m_length && len == 0 )
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			if ( jmp > 0 && starts <= m_length )
+			if ( jmp > 0 && len <= m_length )
 			{
 				size_t   searchLen = m_length - starts;
 				size_t   chunkLen = jmp + len;
@@ -1788,7 +1788,7 @@ namespace Utility {
 				
 				return WString(collect, totalLen);
 			}
-			else if ( jmp == 0 && len > 0 )
+			else if ( jmp == 0 )
 			{
 				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
 			}
