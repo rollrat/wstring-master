@@ -1756,7 +1756,7 @@ namespace Utility {
 		}
 
 		// jmp만큼 건너뛰면서 밟은 문자들을 가져온다.
-		WString Slicing(size_t jmp, size_t starts = 0, bool jmpstarts = true)
+		WString Slicing(size_t jmp, size_t starts = 0)
 		{
 			if (starts >= m_length)
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
@@ -1766,9 +1766,9 @@ namespace Utility {
 				jmp += 1;
 				
 				size_t   reallen = m_length - starts;
-				size_t   retlen = reallen / jmp + (reallen % jmp && jmpstarts);
+				size_t   retlen = reallen / jmp + (reallen % jmp);
 				wchar_t* collect = new wchar_t[retlen+1];
-				size_t   jmpcnt = (jmpstarts ? 0 : jmp-1) + starts;
+				size_t   jmpcnt = starts;
 
 				for ( size_t i = 0 ; jmpcnt < m_length; i++, jmpcnt += jmp )
 				{
@@ -1790,7 +1790,7 @@ namespace Utility {
 		}
 
 		// skip만큼 건너뛰면서 건너뛴 문자들을 가져온다.
-		WString SlicingInverse(size_t skip, size_t starts = 0, bool skipstarts = true)
+		WString SlicingInverse(size_t skip, size_t starts = 0)
 		{
 			if (starts >= m_length)
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
@@ -1800,10 +1800,10 @@ namespace Utility {
 				skip += 1;
 				
 				size_t   reallen = m_length - starts;
-				size_t   retlen = reallen - reallen / skip - (reallen % skip && skipstarts);
+				size_t   retlen = reallen - reallen / skip;//- (reallen % skip);
 				wchar_t* collect = new wchar_t[retlen+1];
 				wchar_t* colptr = collect;
-				size_t   skipcnt = (skipstarts ? 1 : 0) + starts;
+				size_t   skipcnt = starts;
 				size_t   skip2 = (skip - 1) * sizeof(wchar_t);
 
 				for ( ; skipcnt < m_length; skipcnt += skip )
