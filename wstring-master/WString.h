@@ -1757,16 +1757,16 @@ namespace Utility {
 
 		WString Slicing(size_t jmp, size_t starts = 0, size_t len = 1, bool remain = true)
 		{
-			if ( starts >= m_length )
+			if ( starts >= m_length && len == 0 )
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			if ( jmp > 0 && jmp + starts < m_length && len < m_length )
+			if ( jmp > 0 && starts <= m_length )
 			{
 				size_t   searchLen = m_length - starts;
 				size_t   chunkLen = jmp + len;
 				size_t   lastRemain = searchLen % chunkLen;
-				size_t   fixedLen = (searchLen / chunkLen) * len ;
-				size_t   totalLen = fixedLen + (lastRemain >= jmp ? jmp : (remain ? lastRemain : 0));
+				size_t   fixedLen = (searchLen / chunkLen) * len;
+				size_t   totalLen = fixedLen + (lastRemain >= len ? len : (remain ? lastRemain : 0));
 				wchar_t* collect = new wchar_t[totalLen+1];
 				wchar_t* colptr = collect;
 
@@ -1788,7 +1788,7 @@ namespace Utility {
 				
 				return WString(collect, totalLen);
 			}
-			else if ( jmp == 0 )
+			else if ( jmp == 0 && len > 0 )
 			{
 				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
 			}
