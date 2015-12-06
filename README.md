@@ -335,18 +335,16 @@ WString("[rollrat]").Slice(1); // -> "rollrat"
 This function sets a string of `last` from the `first` location. If last is less equal than 0, by the end of the string to 0.
 ### Slicing, SlicingInverse
 ``` c++
-WString Slicing(jmp, [starts = 0, [jmpstarts = true]]);
-WString SlicingInverse(skip, [starts = 0, [skipstarts = true]]);
+WString Slicing(jmp, [starts] = 0);
+WString SlicingInverse(skip, [starts] = 0);
 ```
 ``` c++
 WString("a%%b%%c%%d%%e%%").Slicing(2); // -> "abcde"
-WString("%%a%%b%%c%%d%%e").Slicing(2,0,false); // -> "abcde"
-WString("%%%%a%%b%%c%%d%%e").Slicing(2,2,false); // -> "abcde"
-WString("%01%23%45%67").SlicingInverse(2); // -> "01234567"
-WString("01%23%45%67%").SlicingInverse(2,0,false); // -> "01234567"
-WString("%%%01%23%45%67").SlicingInverse(2,2); // -> "01234567"
+WString("%%a%%b%%c%%d%%e").Slicing(2,2); // -> "abcde"
+WString("01%23%45%67%").SlicingInverse(2); // -> "01234567"
+WString("%01%23%45%67").SlicingInverse(2,1); // -> "01234567"
 ```
-`Slicing` function gets character moved by `jmp` times from starts. If it `jumpstarts` is false, begins on `jmp` position. SlicingInverse gets opposite part of Slicing.
+`Slicing` function gets character moved by `jmp` times from starts. `SlicingInverse` gets opposite part of Slicing(jmp, jmp).
 ### LineSplit (size_t, ...)
 ``` c++
 Lines LineSplit(size_t len, [wstr front, [wstr end]]); // none-of olny end
