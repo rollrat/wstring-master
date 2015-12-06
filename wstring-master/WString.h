@@ -1755,78 +1755,45 @@ namespace Utility {
 			return WString((const wchar_t *)(m_ptr + skip), m_length - (skip << 1));
 		}
 
-		// jmp만큼 건너뛰면서 밟은 문자들을 가져온다.
-		WString Slicing(size_t jmp, size_t starts = 0)
+		WString Slicing(size_t jmp, size_t starts = 0, size_t len = 1, bool remain = true)
 		{
-			if (starts >= m_length)
+			if ( starts >= m_length )
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			if ( jmp > 0 && jmp + starts < m_length )
+			if ( jmp > 0 && jmp + starts < m_length && len < m_length )
 			{
-				jmp += 1;
-				
-				size_t   reallen = m_length - starts;
-				size_t   retlen = reallen / jmp + (reallen % jmp);
-				wchar_t* collect = new wchar_t[retlen+1];
-				size_t   jmpcnt = starts;
+				size_t   searchLen = m_length - starts;
+				size_t   chunkLen = jmp + len;
+				size_t   lastRemain = searchLen % chunkLen;
+				size_t   fixedLen = (searchLen / chunkLen) * len ;
+				size_t   totalLen = fixedLen + (lastRemain >= jmp ? jmp : (remain ? lastRemain : 0));
+				wchar_t* collect = new wchar_t[totalLen+1];
+				wchar_t* colptr = collect;
 
-				for ( size_t i = 0 ; jmpcnt < m_length; i++, jmpcnt += jmp )
+				size_t   countLen = starts;
+				size_t   putLen2 = len * sizeof(wchar_t);
+
+				for ( ; countLen < m_length; countLen += chunkLen )
 				{
-					collect[i] = m_ptr[jmpcnt];
+					memcpy(colptr, m_ptr + countLen, putLen2);
+					colptr += len;
+				}
+				
+				if ( remain && lastRemain && lastRemain < jmp )
+				{
+					memcpy(colptr, m_ptr + countLen, lastRemain);
 				}
 
-				collect[retlen] = 0;
-
-				return WString(collect, retlen);
+				collect[totalLen] = 0;
+				
+				return WString(collect, totalLen);
 			}
 			else if ( jmp == 0 )
 			{
 				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
 			}
-			else
-			{
-				return WString();
-			}
-		}
 
-		// skip만큼 건너뛰면서 건너뛴 문자들을 가져온다.
-		WString SlicingInverse(size_t skip, size_t starts = 0)
-		{
-			if (starts >= m_length)
-				throw(new StringException(StringErrorCode::ComparasionSizeException));
-
-			if ( skip > 0 && skip + starts < m_length )
-			{
-				skip += 1;
-				
-				size_t   reallen = m_length - starts;
-				size_t   retlen = reallen - reallen / skip;//- (reallen % skip);
-				wchar_t* collect = new wchar_t[retlen+1];
-				wchar_t* colptr = collect;
-				size_t   skipcnt = starts;
-				size_t   skip2 = (skip - 1) * sizeof(wchar_t);
-
-				for ( ; skipcnt < m_length; skipcnt += skip )
-				{
-					if ( skipcnt + skip < m_length )
-						memcpy(colptr, m_ptr + skipcnt, skip2);
-					else
-						memcpy(colptr, m_ptr + skipcnt, (m_length - skipcnt) * sizeof(wchar_t));
-					colptr += skip - 1;
-				}
-
-				collect[retlen] = 0;
-				
-				return WString(collect, retlen);
-			}
-			else if ( skip == 0 )
-			{
-				return WString();
-			}
-			else
-			{
-				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
-			}
+			return WString();
 		}
 
 	private:
