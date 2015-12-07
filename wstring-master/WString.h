@@ -1757,16 +1757,18 @@ namespace Utility {
 
 		WString Slicing(size_t jmp, size_t starts = 0, size_t len = 1, bool remain = true)
 		{
-			if ( starts >= m_length && len == 0 && jmp == 0 )
+			size_t   searchLen = m_length - starts;
+
+			if ( searchLen == 0 && searchLen > m_length  && len == 0 && jmp == 0 )
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			if ( len <= m_length )
+			if ( len <= searchLen )
 			{
-				size_t   searchLen = m_length - starts;
 				size_t   chunkLen = jmp + len;
-				size_t   lastRemain = searchLen % chunkLen;
 				size_t   fixedLen = (searchLen / chunkLen) * len;
-				size_t   totalLen = fixedLen + (lastRemain >= len ? len : (remain ? lastRemain : 0));
+				size_t   lastRemain = searchLen % chunkLen;
+				size_t   remainLen = lastRemain >= len ? len : (remain ? lastRemain : 0);
+				size_t   totalLen = fixedLen + remainLen;
 				wchar_t* collect = new wchar_t[totalLen+1];
 				wchar_t* colptr = collect;
 
@@ -1781,9 +1783,9 @@ namespace Utility {
 					colptr += len;
 				}
 				
-				if ( remain && lastRemain )
+				if ( remainLen )
 				{
-					memcpy(colptr, m_ptr + countLen, lastRemain * sizeof(wchar_t));
+					memcpy(colptr, m_ptr + countLen, remainLen * sizeof(wchar_t));
 				}
 
 				collect[totalLen] = 0;
@@ -1792,7 +1794,7 @@ namespace Utility {
 			}
 			else if ( remain )
 			{
-				return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
+				return WString((const wchar_t *)(m_ptr + starts), searchLen);
 			}
 
 			return WString();
