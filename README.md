@@ -253,11 +253,11 @@ WString("it is endswith").EndsWith("endswith"); // true
 WString("it is endswith").EndsWith("ends", 4); // true
 ```
 `StartsWith` checks whether or not match from the first position of the string, `EndsWith` checks whether match from the last position in the string. `starts` and `ends`  is the first and last position of each of the search.
-### PadLeft, PadRight, PadMiddle
+### PadLeft, PadRight, PadCenter
 ``` c++
 WString PadLeft(len, [pad] = L' ');
 WString PadRight(len, [pad] = L' ');
-WString PadMiddle(len, [pad = L' ', [lefts = true]]);
+WString PadCenter(len, [pad = L' ', [lefts = true]]);
 ```
 ``` c++
 WString("123").PadLeft(4); // -> " 123"
@@ -266,10 +266,10 @@ WString("123").PadRight(4); // -> "123 "
 WString("123").PadRight(2); // -> "123"
 WString("123").PadLeft(4,L'k'); // -> "k123"
 WString("123").PadRight(4,L'k'); // -> "123k"
-WString("123").PadMiddle(6); // -> "  123 "
-WString("123").PadMiddle(6,L'k',false); // -> "k123kk"
+WString("123").PadCenter(6); // -> "  123 "
+WString("123").PadCenter(6,L'k',false); // -> "k123kk"
 ```
-This function set string to each right and left ends, and fill the rest of the space by the pad. If the length is less than the length of the string, existing string is returned. The `PadMiddle` function sorts the strings in the middle. If `lefts` is true, string are aligned concentrated on the left.
+This function set string to each right and left ends, and fill the rest of the space by the pad. If the length is less than the length of the string, existing string is returned. The `PadCenter` function sorts the strings in the center. If `lefts` is true, string are aligned concentrated on the left.
 ### InsertLeft, InsertRight
 ``` c++
 WString("1234567890").InsertLeft(3, L','); // -> 123,456,789,0
