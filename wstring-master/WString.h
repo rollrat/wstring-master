@@ -1387,7 +1387,7 @@ namespace Utility {
 			}
 		}
 
-		WString PadMiddle(size_t len, wchar_t pad = L' ', bool lefts = true)
+		WString PadCenter(size_t len, wchar_t pad = L' ', bool lefts = true)
 		{
 			if (len > m_length)
 			{
