@@ -197,7 +197,7 @@ WString Trim(wstr);
 WString("   rollrat  ").TrimStart(); // -> "rollrat  "
 WString("   rollrat  ").TrimEnd(); // -> "   rollrat"
 WString("   rollrat  ").Trim(); // -> "rollrat"
-WString("wwwrollratwww").Trim(); // -> "rollrat"
+WString("wwwrollratwww").Trim(L'w'); // -> "rollrat"
 WString("ssskkkrrrkkkttt").Trim("kkk"); // -> "sssrrrttt"
 ```
 These functions returns string what is deleted duplicate characters. `TrimStart` is removed from the starting position, `TrimEnd` is deleted from the end position, and `Trim` remove both. But, the entered type is wide-string, delete all the strings included.
