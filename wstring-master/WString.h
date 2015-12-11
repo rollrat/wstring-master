@@ -444,7 +444,7 @@ namespace Utility {
 			
 			mergerString = new wchar_t[newSize + 1];
 			memcpy(mergerString, t1.m_ptr, t1.m_length * sizeof(wchar_t));
-			memcpy(mergerString + t2.m_length, t2.m_ptr, t2.m_length * sizeof(wchar_t));
+			memcpy(mergerString + t1.m_length, t2.m_ptr, t2.m_length * sizeof(wchar_t));
 			mergerString[newSize] = 0;
 			
 			StringReferencePutWith with;
