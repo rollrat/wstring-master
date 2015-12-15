@@ -4,7 +4,7 @@ This library provides an easy-to-use string analysis method for **Windows System
 
 ### Targeted Compiler
 All of functions that are included in this library, has a wchar_t type, this type is, will vary in size by the compiler, 
-in other platforms except the windows, you will need to change some.
+so, in other platforms except the windows, you will need to change some.
 
 This project has been developed in visual-studio-2013.
 
@@ -17,7 +17,7 @@ the string to the class, which means that it is released in the destructor. This
 WString getMark()
 {
     wchar_t* dest = new wchar_t[10];
-    memcpy(dest, L"rollrat", 7 * sizeof(wchar_t));
+    memcpy(dest, L"rollrat", 8 * sizeof(wchar_t));
     StringReferencePutWith with;
     return WString(dest, 7, with);
 }
