@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-	RollRat Library
+   RollRat Library
 
 Author:
 
@@ -151,7 +151,6 @@ namespace Utility {
 	//         strncpy를 주로 사용하곤하는데, memcpy는 이를 운영체제에 맞게
 	//         4 byte, 8 byte를 사용하므로 메모리관련함수를 사용하는게 더
 	//         복사에 더 효율적입니다.
-	//      7. 코드로 무슨 짓을 한들 SIMD를 따라갈 순 없습니다.
 	//
 	//   비슷한 함수
 	//   [Right, Substring] [Left, SubstringReverse] [Mid, Substring Slice]
@@ -978,6 +977,7 @@ namespace Utility {
 			// 메모리 낭비가 심하지만, 이 함수를 사용한다는 것 자체가
 			// 이미 메모리에 신경을 쓰지 않는 것이라 해석되므로 그냥 할당함
 			// 미리 세는 것보다 이게더 빠를거 아녀
+            // 안정성을 더 중요하게 생각한다면 wcsstr구문 두 번 돌리면된다
 			size_t         alloclen = max <= m_length ? max : m_length;
 			wchar_t      **position = new wchar_t*[alloclen];
 			size_t        *poslen   = new size_t[alloclen];
@@ -1018,6 +1018,58 @@ namespace Utility {
 			return SplitsArray (n, count + max_remain);
 		}
 
+        SplitsArray SplitSlowHelper(const wchar_t *src, size_t srclen, size_t max)
+        {
+            size_t      max_dec = max;
+			size_t      count = 0;
+            size_t      i = 0;
+			wchar_t    *ptr, *tptr;
+            
+			for ( ptr = m_ptr; (tptr = wcsstr(ptr, src)) && max_dec; max_dec--, count++ )
+			{
+				ptr = tptr + srclen;
+            }
+
+			bool max_remain = max > 0;
+            
+			WString **n = new WString*[count + max_remain];
+            
+			for ( ptr = m_ptr; (tptr = wcsstr(ptr, src)) && max; max--, i++ )
+			{
+				n[i] = new WString((const wchar_t *)(ptr), tptr - ptr);
+				ptr = tptr + srclen;
+			}
+            
+			if (max_remain)
+			{
+				n[count] = new WString((const wchar_t *)(ptr), m_length + m_ptr - ptr );
+			}
+            
+			return SplitsArray (n, count + max_remain);
+        }
+
+        WString SplitPositionHelper(const wchar_t *src, size_t srclen, size_t pos)
+        {
+			wchar_t *ptr = m_ptr, *tptr;
+            
+			for ( ptr = m_ptr; (tptr = wcsstr(ptr, src)) && pos; pos-- )
+			{
+				ptr = tptr + srclen;
+            }
+
+            if (pos)
+				throw(new StringException(StringErrorCode::ComparasionSizeException));
+
+            if (tptr)
+            {
+                return WString((const wchar_t *)(ptr), tptr - ptr);
+            }
+            else
+            {
+                return WString((const wchar_t *)(ptr), m_length + m_ptr - ptr);
+            }
+        }
+
 	public:
 
 		// str을 경계로 자른 문자열 집합들의 집합을 max만큼 가져옵니다.
@@ -1029,6 +1081,26 @@ namespace Utility {
 		SplitsArray Split(const WString& refer, size_t max = SIZE_MAX)
 		{
 			return SplitHelper(refer.m_ptr, refer.m_length, max);
+		}
+
+		SplitsArray SplitSlow(const wchar_t *str, size_t max = SIZE_MAX)
+		{
+			return SplitSlowHelper(str, wcslen(str), max);
+		}
+
+		SplitsArray SplitSlow(const WString& refer, size_t max = SIZE_MAX)
+		{
+			return SplitSlowHelper(refer.m_ptr, refer.m_length, max);
+		}
+        
+		WString SplitPosition(const wchar_t *str, size_t pos)
+		{
+			return SplitPositionHelper(str, wcslen(str), pos);
+		}
+
+		WString SplitPosition(const WString& refer, size_t pos)
+		{
+			return SplitPositionHelper(refer.m_ptr, refer.m_length, pos);
 		}
 
 	private:
@@ -1090,13 +1162,18 @@ namespace Utility {
 			if (starts >= m_length)
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
-			size_t lefts = FindFirst(left, starts) + llen;
+			size_t lefts = FindFirst(left, starts);
 			size_t rights = FindFirst(right, lefts);
+
+            if ( (lefts != error) && (rights != error) )
+                return WString();
+
+            lefts += llen;
 
 			if (lefts > rights)
 				std::swap(lefts, rights);
 
-			return (lefts != error) && (rights != error) ? Slice(lefts, rights - 1) : WString();
+			return  Slice(lefts, rights - 1);
 		}
 
 		SplitsArray BetweensHelper(const wchar_t *left, size_t llen, const wchar_t *right, size_t rlen, size_t starts)
@@ -1580,8 +1657,9 @@ namespace Utility {
 
 				memcpy(mergerPointer += tlen, dest, ddestlen);
 			}
-
+            
 			rest = m_ptr + m_length - iter;
+
 			if ( rest > 0 )
 			{
 				memcpy(mergerPointer, iter, rest * sizeof(wchar_t));
@@ -1593,6 +1671,55 @@ namespace Utility {
 
 			return WString(mergerString, sourceLength, with);
 		}
+        
+		WString ReplaceSlowHelper(const wchar_t *src, const wchar_t *dest, size_t srclen, size_t destlen, size_t max)
+        {
+			size_t         tlen;
+			size_t         rest;
+			size_t         ddestlen = destlen * sizeof(wchar_t);
+            size_t         max_dec = max;
+			size_t         count = 0;
+			size_t         sourceLength;
+			wchar_t       *ptr, *tptr;
+			wchar_t       *mergerString;
+			wchar_t       *mergerPointer;
+			const wchar_t *iter = m_ptr;
+            
+			for ( ptr = m_ptr; (tptr = wcsstr(ptr, src)) && max_dec; max_dec--, count++ )
+			{
+				ptr = tptr + srclen;
+            }
+
+			sourceLength = m_length + (destlen - srclen) * count;
+			mergerPointer = mergerString = new wchar_t[sourceLength + 1];
+            
+			for ( ptr = m_ptr; (tptr = wcsstr(ptr, src)) && max; 
+                     max--, 
+                     iter += srclen + tlen,
+                     ptr = tptr + srclen, 
+					 mergerPointer += destlen )
+			{
+                tlen = (size_t)(tptr - ptr);
+                
+				if (tlen > 0)
+				{
+					memcpy(mergerPointer, iter, tlen * sizeof(wchar_t));
+				}
+                
+				memcpy(mergerPointer += tlen, dest, ddestlen);
+			}
+			
+			rest = m_ptr + m_length - iter;
+
+			if ( rest > 0 )
+			{
+				memcpy(mergerPointer, iter, rest * sizeof(wchar_t));
+			}
+			
+			mergerString[sourceLength] = 0;
+
+			return WString(mergerString, sourceLength, with);
+        }
 
 	public:
 
@@ -1604,6 +1731,16 @@ namespace Utility {
 		WString Replace(const WString& refer0, const WString& refer1, size_t max = SIZE_MAX)
 		{
 			return ReplaceHelper(refer0.m_ptr, refer1.m_ptr, refer0.m_length, refer1.m_length, max);
+		}
+        
+		WString ReplaceSlow(const wchar_t *src, const wchar_t *dest, size_t max = SIZE_MAX)
+		{
+			return ReplaceSlowHelper(src, dest, wcslen(src), wcslen(dest), max);
+		}
+
+		WString ReplaceSlow(const WString& refer0, const WString& refer1, size_t max = SIZE_MAX)
+		{
+			return ReplaceSlowHelper(refer0.m_ptr, refer1.m_ptr, refer0.m_length, refer1.m_length, max);
 		}
 
 		// 포함된 문자열 삭제
@@ -1981,7 +2118,7 @@ namespace Utility {
 				num_hash ^= m_ptr[length] * seed;
 			}
 
-			return num_hash * ((seed << 16) + (num_hash >> 16));
+			return num_hash * ((seed << 16) + (num_hash >> 16) + (num_hash << 32));
 		}
 
 		// 문자열이 수인지 확인합니다.
@@ -2295,10 +2432,12 @@ namespace Utility {
 		{
 			if (m_ptr != nullptr)
 				delete[] m_ptr;
-			m_length = refer.m_length;
-			m_ptr = new wchar_t[m_length + 1];
-			m_last = m_ptr + m_length - 1;
-			memcpy(m_ptr, refer.m_ptr, (m_length + 1) * sizeof(wchar_t));
+			if (m_length = refer.m_length)
+			{
+				m_ptr = new wchar_t[m_length + 1];
+				m_last = m_ptr + m_length - 1;
+				memcpy(m_ptr, refer.m_ptr, (m_length + 1) * sizeof(wchar_t));
+			}
 		}
 
 		inline void Clone(const WString& refer)
@@ -2558,10 +2697,10 @@ namespace Utility {
 					checker_type switchZero = 0;
 					
 					switchZero =
-					   ((nptr & 0x000000000000ffff) - (_WMAGIC & 0x000000000000ffff)) & 0x000000000000ffff
-					 | ((nptr & 0x00000000ffff0000) - (_WMAGIC & 0x00000000ffff0000)) & 0x00000000ffff0000
-		   _X_BRU (  | ((nptr & 0x0000ffff00000000) - (_WMAGIC & 0x0000ffff00000000)) & 0x0000ffff00000000 )
-		   _X_BRU (  | ((nptr & 0xffff000000000000) - (_WMAGIC & 0xffff000000000000)) & 0xffff000000000000 )
+                       ((nptr & 0x000000000000ffff) - (_WMAGIC & 0x000000000000ffff)) & 0x000000000000ffff
+                     | ((nptr & 0x00000000ffff0000) - (_WMAGIC & 0x00000000ffff0000)) & 0x00000000ffff0000
+           _X_BRU (  | ((nptr & 0x0000ffff00000000) - (_WMAGIC & 0x0000ffff00000000)) & 0x0000ffff00000000 )
+           _X_BRU (  | ((nptr & 0xffff000000000000) - (_WMAGIC & 0xffff000000000000)) & 0xffff000000000000 )
 					;
 
 					count += (switchZero & ((~nptr & ((_WMAGIC) << 15)))) / 0x8000 % 0xffff;
@@ -2576,11 +2715,26 @@ namespace Utility {
 			
 			for (; ptr <= m_last; ptr++)
 				if (*ptr == ch) count++;
-
+            
 			return count;
 		}
 
 	};
+    
+    inline WString operator"" ws(const wchar_t* str, size_t length)
+    {
+        return WString{str, length};
+    }
+
+    inline WString operator"" ws(const char* str, size_t length)
+    {
+        return WString{str, length};
+    }
+
+    inline WString operator"" ws(unsigned long long i)
+    {
+        return WString{i};
+    }
 
 }
 

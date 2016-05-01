@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-	RollRat Library
+   RollRat Library
 
 Author:
 
@@ -48,7 +48,7 @@ namespace Utility {
 
 		WStringBuilder()
 		{
-			___Init();
+			Init();
 		}
 
 		WStringBuilder(size_t capacity)
@@ -71,7 +71,7 @@ namespace Utility {
 
 		~WStringBuilder()
 		{
-			___Dispose();
+			DisposeInternal();
 		}
 
 		void Append(const WString& refer)
@@ -80,7 +80,7 @@ namespace Utility {
 			{
 				if (capacity > refer.Length() + m_last->m_length)
 				{
-					___Ensure();
+					Ensure();
 
 					memcpy( m_last->m_ptr +  m_last->m_length, refer.Reference(), refer.Length() * sizeof(wchar_t) );
 
@@ -88,7 +88,7 @@ namespace Utility {
 				}
 				else
 				{
-					___Expand();
+					Expand();
 
 					if (capacity <= refer.Length())
 					{
@@ -100,18 +100,18 @@ namespace Utility {
 						Append(refer);
 						return;
 					}
-
-					___LinkTo();
+                    
+					LinkTo();
 				}
 			}
 		}
 
 		void Append(wchar_t ch)
 		{
-			___Ensure();
+			Ensure();
 
 			if ( m_last->m_length == capacity - 1)
-				___Expand();
+				Expand();
 
 			 m_last->m_ptr[ m_last->m_length++] = ch;
 		}
@@ -128,7 +128,7 @@ namespace Utility {
 			{
 				if (capacity > len +  m_last->m_length)
 				{
-					___Ensure();
+					Ensure();
 
 					memcpy( m_last->m_ptr +  m_last->m_length, str, len * sizeof(wchar_t) );
 
@@ -136,13 +136,13 @@ namespace Utility {
 				}
 				else
 				{
-					___Expand();
+					Expand();
 
 					m_last->m_length = len;
 					m_last->m_ptr = new wchar_t[len];
 					memcpy( m_last->m_ptr, str, len * sizeof(wchar_t) );
 
-					___LinkTo();
+					LinkTo();
 				}
 			}
 		}
@@ -176,13 +176,13 @@ namespace Utility {
 
 		void Dispose()
 		{
-			___Dispose();
-			___Init();
+			DisposeInternal();
+			Init();
 		}
 
 	private:
 
-		WStringBuilderNode *___Create()
+		WStringBuilderNode *Create()
 		{
 			WStringBuilderNode *wsbn = new WStringBuilderNode;
 			wsbn->m_length = 0;
@@ -191,7 +191,7 @@ namespace Utility {
 			return wsbn;
 		}
 
-		void ___Dispose()
+		void DisposeInternal()
 		{
 			WStringBuilderNode *iter = m_head;
 			WStringBuilderNode *prev = nullptr;
@@ -207,13 +207,13 @@ namespace Utility {
 			m_head = m_last = nullptr;
 		}
 
-		void ___Init()
+		void Init()
 		{
-			m_last = m_head = ___Create();
+			m_last = m_head = Create();
 			m_last->m_offset = 0;
 		}
 
-		void ___Ensure()
+		void Ensure()
 		{
 			if (m_last->m_ptr == nullptr)
 			{
@@ -221,19 +221,19 @@ namespace Utility {
 			}
 		}
 
-		bool ___Expand()
+		bool Expand()
 		{
 			if (m_last->m_length > 0)
 			{
-				___LinkTo();
+				LinkTo();
 				return true;
 			}
 			return false;
 		}
 
-		void ___LinkTo()
+		void LinkTo()
 		{
-			WStringBuilderNode *twsbn = ___Create();
+			WStringBuilderNode *twsbn = Create();
 			twsbn->m_offset = m_last->m_length + m_last->m_offset;
 			m_last->m_next = twsbn;
 			m_last = twsbn;

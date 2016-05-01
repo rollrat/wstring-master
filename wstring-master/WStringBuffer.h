@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-	RollRat Library
+   RollRat Library
 
 Author:
 
@@ -46,7 +46,7 @@ namespace Utility {
 			, m_length(0)
 			, m_capacity(capacity)
 		{
-			___Ensure(m_capacity);
+			Ensure(m_capacity);
 		}
 
 		~WStringBuffer()
@@ -56,18 +56,18 @@ namespace Utility {
 
 		void Append(const WString& refer)
 		{
-			___Append(refer.Reference(), refer.Length());
+			Append(refer.Reference(), refer.Length());
 		}
 
 		void Append(const wchar_t *wstr)
 		{
-			___Append(wstr, wcslen(wstr));
+			Append(wstr, wcslen(wstr));
 		}
 		
 		void Append(wchar_t ch)
 		{
 			if ( m_length == m_capacity )
-				___EnsureCopy(m_length + 1);
+				EnsureCopy(m_length + 1);
 
 			 m_ptr[ m_length++ ] = ch;
 		}
@@ -90,35 +90,35 @@ namespace Utility {
 
 		void EnsureMore(size_t size)
 		{
-			___EnsureCopy(size + m_capacity);
+			EnsureCopy(size + m_capacity);
 		}
 
 	private:
 		
-		void ___Append(const wchar_t *wstr, size_t len)
+		void Append(const wchar_t *wstr, size_t len)
 		{
 			if ( m_length + len > m_capacity )
 			{
-				___EnsureCopy(m_length + len);
+				EnsureCopy(m_length + len);
 			}
 			
 			memcpy(m_ptr + m_length, wstr, len * sizeof(wchar_t));
 			m_length += len;
 		}
 
-		void ___Ensure(size_t size)
+		void Ensure(size_t size)
 		{
 			m_ptr = new wchar_t[size];
 			m_capacity = size;
 		}
 
-		void ___EnsureCopy(size_t size)
+		void EnsureCopy(size_t size)
 		{
 			if (size > m_capacity)
 			{
 				// realloc?
 				wchar_t *tmp = m_ptr;
-				___Ensure(size);
+				Ensure(size);
 				memcpy(m_ptr, tmp, m_length * sizeof(wchar_t));
 				delete[] tmp;
 				//realloc(m_ptr, size * sizeof(wchar_t));
