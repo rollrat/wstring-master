@@ -4,7 +4,7 @@
    Copyright (C) 2015. rollrat. All Rights Reserved.
 
 File name:
-   
+
    WString.h
 
 Purpose:
@@ -79,6 +79,8 @@ namespace Utility {
 		InsertionSizeZeroException,
 		// 부호가 없는 변환에서 부호가 발견될 경우 발생됩니다.
 		ToNumericSignException,
+        // 입력된 두 배열의 크기가 다를 경우 발생됩니다.
+        DiscordArraySize,
 	}	StringErrorCode;
 
 	//
@@ -108,6 +110,8 @@ namespace Utility {
 				return "Inserted length can not be zero.";
 			case StringErrorCode::ToNumericSignException:
 				return "Sign has been discovered in unsigned conversion.";
+            case StringErrorCode::DiscordArraySize:
+                return "Size of the two input arrays must be same.";
 			}
 
 			return "Undefined error.";
@@ -180,6 +184,7 @@ namespace Utility {
 
 		typedef ReadOnlyArray<WString *> SplitsArray;
 		typedef ReadOnlyArray<WString *> Lines;
+		typedef ReadOnlyArray<WString *> Elements;
 		typedef ReadOnlyArray<unsigned char> Utf8Array;
 
 		static const size_t error = -1;
@@ -1743,15 +1748,72 @@ namespace Utility {
 			return ReplaceSlowHelper(refer0.m_ptr, refer1.m_ptr, refer0.m_length, refer1.m_length, max);
 		}
 
+	private:
+
+        WString TrimHelper(const wchar_t *src, size_t srclen, size_t max)
+        {
+            size_t         alloclen = max <= m_length ? max : m_length;
+			wchar_t      **position = new wchar_t*[alloclen];
+			size_t         count = 0;
+			size_t         sourceLength;
+			size_t         index = 0;
+			size_t         tlen;
+			size_t         rest;
+			const wchar_t *ptr = m_ptr;
+			const wchar_t *tptr;
+			wchar_t       *mergerString;
+			wchar_t       *mergerPointer;
+			const wchar_t *iter = m_ptr;
+
+			for ( ; (tptr = wcsstr(ptr, src)) && max; )
+			{
+				position[count] = (wchar_t *)tptr;
+				ptr = tptr + srclen;
+				max--;
+				count++;
+			}
+			
+			sourceLength = m_length - srclen * count;
+			mergerPointer = mergerString = new wchar_t[sourceLength + 1];
+
+			for ( ; index < count;
+					index++,
+					iter += srclen + tlen,
+					mergerPointer += tlen )
+			{
+				tlen = (size_t)((const wchar_t *)position[index] - iter);
+
+				if (tlen > 0)
+				{
+					memcpy(mergerPointer, iter, tlen * sizeof(wchar_t));
+				}
+			}
+            
+			rest = m_ptr + m_length - iter;
+
+			if ( rest > 0 )
+			{
+				memcpy(mergerPointer, iter, rest * sizeof(wchar_t));
+			}
+			
+			delete[] position;
+
+			mergerString[sourceLength] = 0;
+
+			return WString(mergerString, sourceLength, with);
+        }
+        
+	public:
+
 		// 포함된 문자열 삭제
 		WString Trim(const wchar_t *src)
 		{
-			return ReplaceHelper(src, L"", wcslen(src), 0, SIZE_MAX);
+			return TrimHelper(src, wcslen(src), SIZE_MAX);
 		}
 		
 		WString Trim(const WString& refer)
 		{
-			return ReplaceHelper(refer.m_ptr, L"", refer.m_length, 0, SIZE_MAX);
+			return TrimHelper(refer.m_ptr, refer.m_length, SIZE_MAX);
 		}
 
 		// 문자열 집합의 처음부터 index까지 포함하는 문자열 집합을 가져옵니다.
