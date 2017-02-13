@@ -1,7 +1,7 @@
 /***
 
    RollRat Software Project.
-   Copyright (C) 2015. rollrat. All Rights Reserved.
+   Copyright (C) 2015-2017. rollrat. All Rights Reserved.
 
 File name:
 
@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-   RollRat Library
+   RollRat Framework
 
 Author:
 
@@ -33,7 +33,7 @@ Author:
 #include <string>
 #include <exception>
 
-#include "Array.h"
+#include "..\collection\Array.h"
 
 #ifndef _MSC_VER
 
@@ -173,10 +173,20 @@ namespace Utility {
 	//
 	class WString final
 	{
+        /**
+         *  @var m_ptr    문자열의 시작을 나타냅니다.
+         *  @var m_last   문자열의 끄틀 나타냅니다.
+         *  @var m_length 문자열의 길이를 나타냅니다.
+         */
 		wchar_t *m_ptr;
 		wchar_t *m_last;
 		size_t   m_length;
 
+        /**
+         *  @var with     클래스 내부에서 문자열 귀속 반환을 
+         *                사용하는 경우에 쓰입니다.
+         *  @var srp      소멸자를 호출여부를 결정합니다.
+         */
 		StringReferencePutWith with;
 		bool srp = false;
 
@@ -188,7 +198,20 @@ namespace Utility {
 		typedef ReadOnlyArray<unsigned char> Utf8Array;
 
 		static const size_t error = -1;
+        
+        /**
+         *  @brief  
+         *  @param  
+         *  @return 
+         */
 
+        /**
+         *  @brief  빈 문자열 집합을 생성합니다.
+         *
+         *  이 생성자는 null-string을 나타냅니다. 이는 변경될 수 없는
+         *  WString 집합을 사용한 요소의 마지막을 나타내는 용도로 사용
+         *  될 수 있습니다.
+         */
 		WString()
 			: m_length(0)
 			, m_ptr(nullptr)
@@ -196,40 +219,101 @@ namespace Utility {
 		{
 		}
 		
+        /**
+         *  @brief  Ansi 기반 문자열 형식을 입력으로 받아 유니코드
+         *          문자열으로 변환한 문자열 집합을 생성합니다.
+         *  @param  ptr Ansi 기반 문자열 형식입니다.
+         *
+         *  이 생성자는 많은 계산과정이 요구될 뿐만아니라 최적화되지
+         *  않은 방법을 사용합니다. Windows Api의 MultiByteToWideChar와 
+         *  같은 함수를 사용하여 변환 후 사용하십시오.
+         */
 		WString(const char *ptr)
 		{
 			AnsiToUnicode(ptr, strlen(ptr));
 		}
-
+        
+        /**
+         *  @brief  Ansi 기반 문자열 형식을 입력으로 받아 유니코드
+         *          문자열으로 변환한 문자열 집합을 생성합니다.
+         *  @param  ptr Ansi 기반 문자열 형식입니다.
+         *  @param  len ptr의 길이입니다.
+         *
+         *  이 생성자는 많은 계산과정이 요구될 뿐만아니라 최적화되지
+         *  않은 방법을 사용합니다. Windows Api의 MultiByteToWideChar와 
+         *  같은 함수를 사용하여 변환 후 사용하십시오. 또한 매개변수 len에
+         *  따라 ptr의 사용길이가 정해지므로 사용시 유의하십시오.
+         */
 		WString(const char *ptr, size_t len)
 		{
 			AnsiToUnicode(ptr, len);
 		}
-
+        
+        /**
+         *  @brief  유니코드 기반 문자열 형식을 입력으로 받아 새로운
+         *          문자열 집합을 생성합니다.
+         *  @param  ptr 유니코드 기반 문자열 형식입니다.
+         *
+         *  이 생성자는 리터널 문자열, 또는 const_cast로 캐스팅된 문자열을
+         *  매개변수로 받도록 설계되어 있습니다. 기타 입력에 대한 문제는
+         *  보호되지 못하므로, WString(const wchar_t *ptr, size_t len)
+         *  을 사용하여 해결하십시오.
+         */
 		WString(const wchar_t *ptr)
 		{
 			InitString(ptr);
 		}
 		
 		// 다음 두 생성자는 이 라이브러리에서 가장 많이 쓰인다.
-		// 이 방법이외에 적절히 생성할 수 있는 방법을 알면 알려주면 감사하겠다.
+		// 이 방법이외에 적절히 생성할 수 있는 방법을 알면 알려주면 감사하겠습니다.
 
-		// 크기까지 입력되는 경우에 한하여 포인터 복사 생성
+        /**
+         *  @brief  유니코드 기반 문자열 포인터 형식을 입력으로 받아 
+         *          소멸자가 호출되지 않는 문자열을 생성합니다.
+         *  @param  ptr 유니코드 기반 문자열 포인터 형식입니다.
+         *  @param  len ptr의 길이입니다.
+         *
+         *  이 생성자는 문자열 포인터 형식과 길이를 입력으로 받으며, WString이 
+         *  제공하는 도구만을 사용하는 목적으로 이용하려는 경우에 적합한
+         *  생성자 입니다.
+         */
 		WString(wchar_t *ptr, size_t len)
 			: m_length(len)
 			, m_ptr(ptr)
 			, m_last(ptr + len - 1)
 			, srp(true)
-		{
+		{ // 크기까지 입력되는 경우에 한하여 포인터 복사 생성
 		}
-
+        
+        /**
+         *  @brief  유니코드 기반 문자열 포인터 형식을 입력으로 받으며
+         *          소멸자가 호출되는 문자열을 생성합니다.
+         *  @param  ptr 유니코드 기반 문자열 포인터 형식입니다.
+         *  @param  len ptr의 길이입니다.
+         *  @param  <>  문자열 귀속 플레이스 홀더입니다.
+         *
+         *  이 생성자는 문자열 포인터 형식과 길이를 입력으로 받으며, WString클래스에
+         *  문자열을 귀속시켜 사용하는 목적으로 이용하려는 경우에 적합한
+         *  생성자 입니다. 생성자는 ptr에 대한 검사를 진행하지 않고, 귀속시키므로,
+         *  입력되는 길이는 이용자가 확정하여 이용해야합니다.
+         */
 		WString(wchar_t *ptr, size_t len, StringReferencePutWith)
 			: m_length(len)
 			, m_ptr(ptr)
 			, m_last(ptr + len - 1)
 		{
 		}
-
+        
+        /**
+         *  @brief  유니코드 기반 문자열 형식과 길이를 입력으로 받아 새로운
+         *          문자열 집합을 생성합니다.
+         *  @param  ptr 유니코드 기반 문자열 포인터 형식입니다.
+         *  @param  len ptr의 길이입니다.
+         *
+         *  이 생성자는 입력받은 길이에 따라 입력된 문자열을 복사합니다.
+         *  길이를 미리 확정하지 않은 경우 WString(const wchar_t *ptr)
+         *  생성자를 사용하십시오.
+         */
 		WString(const wchar_t *ptr, size_t len)
 			: m_length(len)
 		{
@@ -239,6 +323,11 @@ namespace Utility {
 			m_last[1] = 0;
 		}
 		
+        /**
+         *  @brief  문자 하나를 반복한 문자열을 생성합니다.
+         *  @param  ch 반복할 문자를 지정합니다.
+         *  @param  count 반복할 횟수를 지정합니다.
+         */
 		WString(wchar_t ch, size_t count)
 			: m_length(count)
 		{
@@ -248,6 +337,10 @@ namespace Utility {
 			m_ptr[m_length] = 0;
 		}
 		
+        /**
+         *  @brief  입력받은 문자로 시작하는 길이가 1인 문자열을 생성합니다.
+         *  @param  ch 유니코드 기반 문자 형식입니다.
+         */
 		WString(wchar_t ch)
 			: m_length(1)
 		{
@@ -257,22 +350,40 @@ namespace Utility {
 			*(m_last + 1) = 0;
 		}
 		
+        /**
+         *  @brief  문자 하나를 반복한 문자열을 생성합니다.
+         *  @param  ch 반복할 문자를 지정합니다.
+         *  @param  count 반복할 횟수를 지정합니다.
+         */
 		WString(char ch, size_t count)
 			: WString((wchar_t)ch, count)
 		{
 		}
+        /**
+         *  @brief  입력받은 문자로 시작하는 길이가 1인 문자열을 생성합니다.
+         *  @param  ch Ansi 기반 문자 형식입니다.
+         */
 		
 		WString(char ch)
 			: WString((wchar_t)ch)
 		{
 		}
 		
+        /**
+         *  @brief  입력받은 문자로 시작하는 길이가 1인 문자열을 생성합니다.
+         *  @param  ch Ansi 기반 문자 형식입니다.
+         */
 		WString(unsigned char ch)
 			: WString((wchar_t)ch)
 		{
 		}
-
+        
 		// short도 있었는데 지저분해서 지워버림
+
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(int num)
 		{
 			wchar_t buffer[65];
@@ -280,6 +391,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(long int num)
 		{
 			wchar_t buffer[65];
@@ -287,6 +402,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(long long int num)
 		{
 			wchar_t buffer[65];
@@ -294,6 +413,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(unsigned int num)
 		{
 			wchar_t buffer[65];
@@ -301,6 +424,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(unsigned long int num)
 		{
 			wchar_t buffer[65];
@@ -308,6 +435,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(unsigned long long int num)
 		{
 			wchar_t buffer[65];
@@ -315,6 +446,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(float num)
 		{
 			wchar_t buffer[65];
@@ -322,6 +457,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(double num)
 		{
 			wchar_t buffer[65];
@@ -329,6 +468,10 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  입력받은 정수형 또는 실수형으로 문자열을 생성합니다.
+         *  @param  num 입력할 정수형 또는 실수형을 지정합니다.
+         */
 		WString(long double num)
 		{
 			wchar_t buffer[65];
@@ -336,21 +479,44 @@ namespace Utility {
 			InitString((const wchar_t *)buffer);
 		}
 		
+        /**
+         *  @brief  클래스 복사 생성자입니다.
+         *  @param  cnt 복사할 문자열 도구 집합을 지정합니다.
+         *
+         *  이 생성자는 소멸자를 호출하는 새로운 문자열을 생성합니다.
+         *  WString(WString& cnt)은 기본적으로 제공되지 않습니다.
+         */
 		WString(const WString& cnt)
 			: WString((const wchar_t *)cnt.m_ptr, cnt.m_length)
 		{
 		}
-
+        
+        /**
+         *  @brief  표준 문자열을 이용해 복사 포인터를 생성합니다.
+         *  @param  str 표준 문자열을 지정합니다.
+         *
+         *  이 생성자는 표준 문자열을 입력으로 받으며, WString이 
+         *  제공하는 도구만을 사용하는 목적으로 이용하려는 경우에 적합한
+         *  생성자 입니다.
+         */
 		WString(std::wstring& str)
 			: WString(&str[0], str.length())
 		{
 		}
-
+        
+        /**
+         *  @brief  표준 문자열을 입력으로 받아 새로운 문자열 집합을 생성합니다.
+         *  @param  wstr 표준 문자열을 지정합니다.
+         */
 		WString(const std::string& str)
 			: WString(str.c_str(), str.length())
 		{
 		}
-
+        
+        /**
+         *  @brief  표준 문자열을 입력으로 받아 새로운 문자열 집합을 생성합니다.
+         *  @param  wstr 표준 문자열을 지정합니다.
+         */
 		WString(const std::wstring& wstr)
 			: WString(wstr.c_str(), wstr.length())
 		{
@@ -364,32 +530,49 @@ namespace Utility {
 				m_ptr = nullptr;
 			}
 		}
-
-		// 문자열의 길이를 가져옵니다.
+        
+        /**
+         *  @brief  문자열의 길이를 가져옵니다.
+         *
+         *  이 함수는 null-terminated string에서 마지막 문자인
+         *  '\0'를 제외한 나머지 부분의 길이를 가져옵니다.
+         */
 		inline size_t Length() const
 		{
 			return m_length;
 		}
 		
-		// 문자열 집합의 크기가 0인지 확인합니다.
+        /**
+         *  @brief  문자열 집합의 크기가 0인지 확인합니다.
+         */
 		inline bool Empty() const
 		{
 			return m_length == 0;
 		}
-
-		// 문자열 집합의 크기가 0보다 큰지 확인합니다.
+        
+        /**
+         *  @brief  문자열 집합의 크기가 0보다 큰지 확인합니다.
+         */
 		inline bool Full() const
 		{
 			return m_length > 0;
 		}
-
-		// 문자열이 생성되어 있는 지의 여부를 확인합니다.
+        
+        /**
+         *  @brief  문자열이 생성되어 있는 지의 여부를 확인합니다.
+         */
 		inline bool Null() const
 		{
 			return m_ptr == nullptr;
 		}
 		
-		// 문자열을 참조합니다.
+        /**
+         *  @brief  문자열 포인터를 가져옵니다.
+         *
+         *  이 함수는 이 클래스에 포함된 raw-data를 제공하는 유일한 함수입니다.
+         *  이 함수를 통해 raw-data를 변경하는 것은 이 클래스의 올바른
+         *  사용법이 아닙니다.
+         */
 		inline const wchar_t *Reference() const
 		{
 			return m_ptr;
@@ -397,8 +580,6 @@ namespace Utility {
 
 	private:
 
-		// 이 함수는 Insert(0, str, len)의 추상입니다.
-		// 빠른 Append를 실행하려면 StringBuilder를 이용하십시오.
 		WString Append(const wchar_t *str, size_t len)
 		{
 			size_t newSize = m_length + len;
@@ -415,18 +596,39 @@ namespace Utility {
 		}
 
 	public:
-
+        
+        /**
+         *  @brief  문자열 맨 앞에 문자열을 추가한 문자열을 반환합니다.
+         *  @param  str 추가할 문자열을 지정합니다.
+         *
+         *  이 함수는 Insert(0, str, len)의 추상입니다.
+         *  빠른 Append를 실행하려면 StringBuilder를 이용하십시오.
+         */
 		WString Append(const wchar_t *str)
 		{
 			return Append(str, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열 맨 앞에 문자열을 추가한 문자열을 반환합니다.
+         *  @param  refer 추가할 문자열을 지정합니다.
+         *
+         *  이 함수는 Insert(0, str, len)의 추상입니다.
+         *  빠른 Append를 실행하려면 StringBuilder를 이용하십시오.
+         */
 		WString Append(const WString& refer)
 		{
 			return Append(refer.m_ptr, refer.m_length);
 		}
-
-		// 두 문자열을 병합합니다.
+        
+        /**
+         *  @brief  두 문자열을 병합합니다.
+         *  @param  t1 병합할 첫 번째 문자열입니다.
+         *  @param  t2 병합할 두 번째 문자열입니다.
+         *
+         *  이 함수는 빠른 문자열 병합을 목적으로 생성되었습니다. 되도록이면
+         *  WString이라는 형식에 맞는 매개변수를 입력하시기 바랍니다.
+         */
 		static WString Concat(const WString& t1, const WString& t2)
 		{
 			if (t1.Empty())
@@ -454,8 +656,16 @@ namespace Utility {
 			StringReferencePutWith with;
 			return WString(mergerString, newSize, with);
 		}
-
-		// 세 문자열을 병합합니다.
+        
+        /**
+         *  @brief  세 문자열을 병합합니다.
+         *  @param  t1 병합할 첫 번째 문자열입니다.
+         *  @param  t2 병합할 두 번째 문자열입니다.
+         *  @param  t3 병합할 세 번째 문자열입니다.
+         *
+         *  이 함수는 빠른 문자열 병합을 목적으로 생성되었습니다. 되도록이면
+         *  WString이라는 형식에 맞는 매개변수를 입력하시기 바랍니다.
+         */
 		static WString Concat(const WString& t1, const WString& t2, const WString& t3)
 		{
 			if (t1.Empty() && t2.Empty() && t3.Empty())
@@ -475,8 +685,17 @@ namespace Utility {
 			StringReferencePutWith with;
 			return WString(mergerString, newSize, with);
 		}
-
-		// 네 문자열을 병합합니다.
+        
+        /**
+         *  @brief  네 문자열을 병합합니다.
+         *  @param  t1 병합할 첫 번째 문자열입니다.
+         *  @param  t2 병합할 두 번째 문자열입니다.
+         *  @param  t3 병합할 세 번째 문자열입니다.
+         *  @param  t4 병합할 네 번째 문자열입니다.
+         *
+         *  이 함수는 빠른 문자열 병합을 목적으로 생성되었습니다. 되도록이면
+         *  WString이라는 형식에 맞는 매개변수를 입력하시기 바랍니다.
+         */
 		static WString Concat(const WString& t1, const WString& t2, const WString& t3, const WString& t4)
 		{
 			if (t1.Empty() && t2.Empty() && t3.Empty() && t4.Empty())
@@ -497,24 +716,47 @@ namespace Utility {
 			StringReferencePutWith with;
 			return WString(mergerString, newSize, with);
 		}
-
-		// 두 문자열을 서로 비교합니다.
+        
+        /**
+         *  @brief  두 문자열을 서로 비교합니다.
+         *  @param  str 비교할 문자열을 지정합니다.
+         *  @return wcscmp함수의 반환형식을 사용합니다.
+         *
+         *  이 함수는 클래스에 지정된 문자열을 wcscmp의 첫 번째 매개변수로
+         *  사용합니다.
+         */
 		inline size_t CompareTo(const wchar_t *str) const
 		{
 			return wcscmp(m_ptr, str);
 		}
 		
+        /**
+         *  @brief  두 문자열을 서로 비교합니다.
+         *  @param  str 비교할 문자열을 지정합니다.
+         *  @return wcscmp함수의 반환형식을 사용합니다.
+         *
+         *  이 함수는 클래스에 지정된 문자열을 wcscmp의 첫 번째 매개변수로
+         *  사용합니다.
+         */
 		inline size_t CompareTo(const WString& refer) const
 		{
 			return CompareTo(refer.m_ptr);
 		}
-
+        
+        /**
+         *  @brief  두 문자열을 서로 비교하는 함수입니다.
+         *  @param  r1 비교할 첫 번째 문자열
+         *  @param  r2 비교할 두 번째 문자열
+         *  @return wcscmp함수의 반환형식을 사용합니다.
+         */
 		inline static int Comparer(const WString& r1, const WString& r2)
 		{
 			return wcscmp(r1.m_ptr, r2.m_ptr);
 		}
-
-		// 두 문자열이 서로 같은지 확인합니다.
+        
+        /**
+         *  @brief  두 문자열이 서로 같은지의 여부를 확인합니다.
+         */
 		inline bool Equal(const wchar_t *str) const
 		{
 			size_t strlen = wcslen(str);
@@ -524,7 +766,10 @@ namespace Utility {
 
 			return false;
 		}
-
+        
+        /**
+         *  @brief  두 문자열이 서로 같은지의 여부를 확인합니다.
+         */
 		inline bool Equal(const WString& refer) const
 		{
 			if (refer.m_length != this->m_length)
@@ -533,38 +778,57 @@ namespace Utility {
 			return !memcmp(m_ptr, refer.m_ptr, m_length * sizeof(wchar_t));
 		}
 		
+        /**
+         *  @brief  두 문자열이 서로 같은지의 여부를 확인합니다.
+         */
 		inline bool operator==(const wchar_t *ptr) const
 		{
 			return Equal(ptr);
 		}
-
+        
+        /**
+         *  @brief  두 문자열이 서로 같은지의 여부를 확인합니다.
+         */
 		inline bool operator==(const WString& refer) const
 		{
 			return Equal(refer);
 		}
-
+        
+        /**
+         *  @brief  두 문자열이 서로 다른지의 여부를 확인합니다.
+         */
 		inline bool operator!=(const wchar_t *ptr) const
 		{
 			return !Equal(ptr);
 		}
-
+        
+        /**
+         *  @brief  두 문자열이 서로 다른지의 여부를 확인합니다.
+         */
 		inline bool operator!=(const WString& refer) const
 		{
 			return !Equal(refer);
 		}
 		
-		// 앞에서 부터 읽어온다. 굳이 만든 이유는 Last와 짝을 맞추기 위한 정도
-		// vb에선 Right, Left와 비슷하고
-		// 여기선 Substring과 SubstringReverse나 Remove랑 비슷하다.
+        /**
+         *  @brief  문자열 앞에서 부터 지정된 거리만큼 떨어진 문자를 가져옵니다.
+         *  @param  pos 거리를 지정합니다.
+         */
 		inline wchar_t First(size_t pos) const
 		{
+		    // 앞에서 부터 읽어온다. 굳이 만든 이유는 Last와 짝을 맞추기 위한 정도
+		    // vb에선 Right, Left와 비슷하고
+		    // 여기선 Substring과 SubstringReverse나 Remove랑 비슷하다.
 			if (pos >= m_length)
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
 			return m_ptr[pos];
 		}
-
-		// 뒤에서 부터 긁어온다.
+        
+        /**
+         *  @brief  문자열 뒤에서 부터 지정된 거리만큼 떨어진 문자를 가져옵니다.
+         *  @param  pos 거리를 지정합니다.
+         */
 		inline wchar_t Last(size_t pos) const
 		{
 			if (pos >= m_length)
@@ -597,30 +861,70 @@ namespace Utility {
 		}
 
 	public:
-
+        
+        /**
+         *  @brief  문자열 앞에서 지정된 거리만큼 떨어진 부분부터 지정된 문자열이 
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  str 찾을 문자열을 지정합니다.
+         *  @param  starts 문자열 앞에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자열이 처음 나타내는 위치입니다. 해당 문자열을 찾지 못한경우
+         *          WString::error가 반환됩니다. 
+         */
 		size_t FindFirst(const wchar_t *str, size_t starts = 0) const
 		{
 			return FindFirstHelper(str, starts);
 		}
-
+        
+        /**
+         *  @brief  문자열 앞에서 지정된 거리만큼 떨어진 부분부터 지정된 문자열이 
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  str 찾을 문자열을 지정합니다.
+         *  @param  starts 문자열 앞에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자열이 처음 나타내는 위치입니다. 해당 문자열을 찾지 못한경우
+         *          WString::error가 반환됩니다. 
+         */
 		size_t FindFirst(const WString& refer, size_t starts = 0) const
 		{
 			return FindFirstHelper(refer.m_ptr, starts);
 		}
-
+        
+        /**
+         *  @brief  문자열 뒤에서 지정된 거리만큼 떨어진 부분부터 지정된 문자열이 
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  str 찾을 문자열을 지정합니다.
+         *  @param  ends 문자열 뒤에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자열이 처음 나타내는 위치입니다. 해당 문자열을 찾지 못한경우
+         *          WString::error가 반환됩니다. 
+         */
 		size_t FindLast(const wchar_t *str, size_t ends = 0) const
 		{
 			return FindLastHelper(str, ends, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열 뒤에서 지정된 거리만큼 떨어진 부분부터 지정된 문자열이 
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  str 찾을 문자열을 지정합니다.
+         *  @param  ends 문자열 뒤에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자열이 처음 나타내는 위치입니다. 해당 문자열을 찾지 못한경우
+         *          WString::error가 반환됩니다. 
+         */
 		size_t FindLast(const WString& refer, size_t ends = 0) const
 		{
 			return FindLastHelper(refer.m_ptr, ends, refer.m_length);
 		}
 		
-		// starts위치부터 시작하여 ch와 일치하는 문자의 위치를 찾습니다.
+        /**
+         *  @brief  문자열 앞에서 지정된 거리만큼 떨어진 부분부터 지정된 문자가
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  ch 찾을 문자를 지정합니다.
+         *  @param  starts 문자열 앞에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자가 처음 나타내는 위치입니다. 해당 문자를 찾지 못한경우
+         *          WString::error가 반환됩니다.
+         */
 		size_t FindFirst(const wchar_t ch, size_t starts = 0) const
 		{
+		    // starts위치부터 시작하여 ch와 일치하는 문자의 위치를 찾습니다.
 			if (starts >= m_length)
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 			
@@ -628,10 +932,18 @@ namespace Utility {
 
 			return ptr != NULL ? ptr - m_ptr : error;
 		}
-
-		// FindLast는 FindLast를 계속사용할 수 있고, FindFirst는 FindFirst를 계속사용할 수 있다.
+        
+        /**
+         *  @brief  문자열 뒤에서 지정된 거리만큼 떨어진 부분부터 지정된 문자가
+         *          처음 나타나는 위치를 가져옵니다.
+         *  @param  ch 찾을 문자를 지정합니다.
+         *  @param  starts 문자열 뒤에서부터 떨어진 거리를 지정합니다.
+         *  @return 문자가 처음 나타내는 위치입니다. 해당 문자를 찾지 못한경우
+         *          WString::error가 반환됩니다. 
+         */
 		size_t FindLast(const wchar_t ch, size_t ends = 0) const
 		{
+		    // FindLast는 FindLast를 계속사용할 수 있고, FindFirst는 FindFirst를 계속사용할 수 있다.
 			if (ends >= m_length)
 				return error;
 			
@@ -739,18 +1051,30 @@ namespace Utility {
 
 	public:
 		
-		// 문자열이 포함되어있는지 확인합니다.
+        /**
+         *  @brief  문자열이 포함되어있는지의 여부를 확인합니다.
+         *  @param  str 포함되어있는지의 여부를 확인할 문자열을 지정합니다.
+         *  @param  ignorecase 문자열의 대소문자를 구분하지않고 확인할 것인지의 여부를 지정합니다.
+         */
 		bool Contains(const wchar_t *str, bool ignorecase = false) const
 		{
 			return ContainsHelper(str, wcslen(str), ignorecase);
 		}
-
+        
+        /**
+         *  @brief  문자열이 포함되어있는지의 여부를 확인합니다.
+         *  @param  str 포함되어있는지의 여부를 확인할 문자열을 지정합니다.
+         *  @param  ignorecase 문자열의 대소문자를 구분하지않고 확인할 것인지의 여부를 지정합니다.
+         */
 		bool Contains(const WString& refer, bool ignorecase = false) const
 		{
 			return ContainsHelper(refer.m_ptr, refer.m_length, ignorecase);
 		}
 
-		// 인덱스 접근 (charAt)
+        /**
+         *  @brief  지정된 위치의 문자를 가져옵니다.
+         *  @param  index 위치를 지정합니다.
+         */
 		inline wchar_t operator[](size_t index) const
 		{
 			// 비용이 너무 크다
@@ -759,8 +1083,10 @@ namespace Utility {
 
 			return m_ptr[index];
 		}
-
-		// starts 위치부터 문자열의 끝까지 위치한 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  starts 위치부터 문자열의 끝까지 위치한 문자열 집합을 가져옵니다.
+         */
 		WString Substring(size_t starts)
 		{
 			if (starts > m_length)
@@ -768,8 +1094,10 @@ namespace Utility {
 
 			return WString((const wchar_t *)(m_ptr + starts), m_length - starts);
 		}
-
-		// starts위치부터 len만큼의 크기만큼 자른 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  starts위치부터 len만큼의 크기만큼 자른 문자열 집합을 가져옵니다.
+         */
 		WString Substring(size_t starts, size_t len)
 		{
 			if (len + starts > m_length)
@@ -777,8 +1105,10 @@ namespace Utility {
 
 			return WString((const wchar_t *)(m_ptr + starts), len);
 		}
-
-		// 마지막 요소에서 시작되어 starts만큼 자른 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  뒤에서 시작해 starts만큼 자른 문자열 집합을 가져옵니다.
+         */
 		WString SubstringReverse(size_t starts)
 		{
 			if (starts > m_length)
@@ -786,8 +1116,10 @@ namespace Utility {
 
 			return WString((const wchar_t *)(m_ptr), m_length - starts);
 		}
-
-		// 마지막 요소에서 시작되어 starts만큼 뒤 위치에서 len만큼 자른 문자열 집합을 가져옵니다. 
+        
+        /**
+         *  @brief  뒤에서 시작해 starts만큼 뒤 위치에서 len만큼 자른 문자열 집합을 가져옵니다. 
+         */
 		WString SubstringReverse(size_t starts, size_t len)
 		{
 			if (len + starts > m_length)
@@ -795,7 +1127,10 @@ namespace Utility {
 
 			return WString((const wchar_t *)(m_last - starts - len + 1), len);
 		}
-
+        
+        /**
+         *  @brief  선행선형공백 영역이 끝나는 부분을 계산합니다.
+         */
 		size_t TrimStartPos() const
 		{
 			const wchar_t *ptr = m_ptr;
@@ -808,7 +1143,10 @@ namespace Utility {
 			}
 			return ptr - m_ptr;
 		}
-
+        
+        /**
+         *  @brief  후행선형공백 영역이 끝나는 부분을 계산합니다.
+         */
 		size_t TrimEndPos() const
 		{
 			wchar_t *ptr = m_last;
@@ -822,6 +1160,10 @@ namespace Utility {
 			return ptr - m_ptr; // *m_ptr 기준으로
 		}
 		
+        /**
+         *  @brief  앞에서 부터 반복된 문자가 끝나는 부분을 계산합니다.
+         *  @param  ch 반복된 문자를 지정합니다.
+         */
 		size_t TrimStartPos(wchar_t ch) const
 		{
 			const wchar_t *ptr = m_ptr;
@@ -834,7 +1176,11 @@ namespace Utility {
 			}
 			return ptr - m_ptr;
 		}
-
+        
+        /**
+         *  @brief  뒤에서 부터 반복된 문자가 끝나는 부분을 계산합니다.
+         *  @param  ch 반복된 문자를 지정합니다.
+         */
 		size_t TrimEndPos(wchar_t ch) const
 		{
 			wchar_t *ptr = m_last;
@@ -847,8 +1193,10 @@ namespace Utility {
 			}
 			return ptr - m_ptr; // *m_ptr 기준으로
 		}
-
-		// 선행선형공백을 제거한 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  선행선형공백을 제거한 문자열 집합을 가져옵니다.
+         */
 		WString TrimStart()
 		{
 			const wchar_t *ptr = m_ptr;
@@ -861,8 +1209,10 @@ namespace Utility {
 			}
 			return WString(ptr, m_length + m_ptr - ptr);
 		}
-
-		// 후행선형공백을 제거한 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  후행선형공백을 제거한 문자열 집합을 가져옵니다.
+         */
 		WString TrimEnd()
 		{
 			wchar_t *ptr = m_last;
@@ -875,8 +1225,10 @@ namespace Utility {
 			}
 			return WString((const wchar_t *)m_ptr, ptr - m_ptr + 1);
 		}
-
-		// 선/후행선형공백을 제거한 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  선행선형공백과 후행선형공백을 제거한 문자열 집합을 가져옵니다.
+         */
 		WString Trim()
 		{
 			const wchar_t *fptr = m_ptr;
@@ -897,7 +1249,11 @@ namespace Utility {
 			}
 			return WString(fptr, ptr - fptr + 1);
 		}
-
+        
+        /**
+         *  @brief  앞에서 부터 반복된 문자를 제거한 문자열 집합을 가져옵니다.
+         *  @param  ch 반복된 문자를 지정합니다.
+         */
 		WString TrimStart(wchar_t ch)
 		{
 			const wchar_t *ptr = m_ptr;
@@ -910,7 +1266,11 @@ namespace Utility {
 			}
 			return WString(ptr, m_length + m_ptr - ptr);
 		}
-
+        
+        /**
+         *  @brief  뒤에서 부터 반복된 문자를 제거한 문자열 집합을 가져옵니다.
+         *  @param  ch 반복된 문자를 지정합니다.
+         */
 		WString TrimEnd(wchar_t ch)
 		{
 			wchar_t *ptr = m_last;
@@ -923,7 +1283,11 @@ namespace Utility {
 			}
 			return WString((const wchar_t *)m_ptr, ptr - m_ptr + 1);
 		}
-
+        
+        /**
+         *  @brief  앞과 뒤, 모두에서 부터 반복된 문자를 제거한 문자열 집합을 가져옵니다.
+         *  @param  ch 반복된 문자를 지정합니다.
+         */
 		WString Trim(wchar_t ch)
 		{
 			const wchar_t *fptr = m_ptr;
@@ -957,19 +1321,31 @@ namespace Utility {
 		}
 
 	public:
-
-		// 문자열 집합에 포함된 str집합의 개수를 가져옵니다.
-		// (Len->Count로 변경)
+        
+        /**
+         *  @brief  문자열 집합에 포함된 지정된 문자열 집합의 개수를 가져옵니다.
+         *  @param  str 지정된 문자열 입니다.
+         */
 		size_t Count(const wchar_t *str) const
 		{
+		    // 문자열 집합에 포함된 str집합의 개수를 가져옵니다.
+		    // (Len->Count로 변경)
 			return CountHelper(str, wcslen(str));
 		}
 
+        /**
+         *  @brief  문자열 집합에 포함된 지정된 문자열 집합의 개수를 가져옵니다.
+         *  @param  refer 지정된 문자열 입니다.
+         */
 		size_t Count(const WString& refer) const
 		{
 			return CountHelper(refer.m_ptr, refer.m_length);
 		}
-
+        
+        /**
+         *  @brief  문자열 집합에 포함된 지정된 문자의 개수를 가져옵니다.
+         *  @param  ch 지정된 문자입니다.
+         */
 		size_t Count(const wchar_t ch) const
 		{
 			return wcountch(m_ptr, ch);
@@ -1076,33 +1452,102 @@ namespace Utility {
         }
 
 	public:
-
-		// str을 경계로 자른 문자열 집합들의 집합을 max만큼 가져옵니다.
+        
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼 가져옵니다.
+         *  @param  str 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 클래스는 경계 문자열 자르기를 Split와 SplitSlow의 두 가지 형식으로 제공합니다.
+         *  Split는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, SplitSlow는
+         *  Split와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		SplitsArray Split(const wchar_t *str, size_t max = SIZE_MAX)
 		{
 			return SplitHelper(str, wcslen(str), max);
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼 가져옵니다.
+         *  @param  refer 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 클래스는 경계 문자열 자르기를 Split와 SplitSlow의 두 가지 형식으로 제공합니다.
+         *  Split는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, SplitSlow는
+         *  Split와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		SplitsArray Split(const WString& refer, size_t max = SIZE_MAX)
 		{
 			return SplitHelper(refer.m_ptr, refer.m_length, max);
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼 가져옵니다.
+         *  @param  str 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 클래스는 경계 문자열 자르기를 Split와 SplitSlow의 두 가지 형식으로 제공합니다.
+         *  Split는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, SplitSlow는
+         *  Split와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		SplitsArray SplitSlow(const wchar_t *str, size_t max = SIZE_MAX)
 		{
 			return SplitSlowHelper(str, wcslen(str), max);
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼 가져옵니다.
+         *  @param  refer 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 클래스는 경계 문자열 자르기를 Split와 SplitSlow의 두 가지 형식으로 제공합니다.
+         *  Split는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, SplitSlow는
+         *  Split와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		SplitsArray SplitSlow(const WString& refer, size_t max = SIZE_MAX)
 		{
 			return SplitSlowHelper(refer.m_ptr, refer.m_length, max);
 		}
         
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합 중 지정된 위치의 것을 가져옵니다.
+         *  @param  str 경계로 지정할 문자열입니다.
+         *  @param  pos 지정할 위치입니다.
+         *  @throw  경계로 자른 문자열들의 집합의 요소 개수가 지정한 위치보다 작은경우 
+         *          StringErrorCode::ComparasionSizeException로 throw 합니다.
+         *
+         *  이 함수는 Split, SplitSlow와 같은 처리를 하나 내부에서 지정된 위치의 것만을
+         *  가져올 수 있도록 최적화되어있습니다. Count함수로 미리 검사하여 사용하거나, 
+         *  try ... catch ... 구문을 이용하여 사용하십시오.
+         */
 		WString SplitPosition(const wchar_t *str, size_t pos)
 		{
 			return SplitPositionHelper(str, wcslen(str), pos);
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열을 경계로 자른 문자열들의 집합 중 지정된 위치의 것을 가져옵니다.
+         *  @param  refer 경계로 지정할 문자열입니다.
+         *  @param  pos 지정할 위치입니다.
+         *  @throw  경계로 자른 문자열들의 집합의 요소 개수가 지정한 위치보다 작은경우 
+         *          StringErrorCode::ComparasionSizeException로 throw 합니다.
+         *
+         *  이 함수는 Split, SplitSlow와 같은 처리를 하나 내부에서 지정된 위치의 것만을
+         *  가져올 수 있도록 최적화되어있습니다. Count함수로 미리 검사하여 사용하거나, 
+         *  try ... catch ... 구문을 이용하여 사용하십시오.
+         */
 		WString SplitPosition(const WString& refer, size_t pos)
 		{
 			return SplitPositionHelper(refer.m_ptr, refer.m_length, pos);
@@ -1148,13 +1593,28 @@ namespace Utility {
 		}
 
 	public:
-
-		// 뒤에서 부터 str을 경계로 자른 문자열 집합들의 집합을 max만큼 가져옵니다.
+        
+        /**
+         *  @brief  뒤에서 부터 지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼
+         *          가져옵니다.
+         *  @param  refer 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		SplitsArray SplitReverse(const wchar_t* refer, size_t max = SIZE_MAX)
 		{
 			return SplitReverseHelper(refer, wcslen(refer), max);
 		}
-
+        
+        /**
+         *  @brief  뒤에서 부터 지정된 문자열을 경계로 자른 문자열들의 집합을 지정된 개수만큼
+         *          가져옵니다.
+         *  @param  refer 경계로 지정할 문자열입니다.
+         *  @param  max 지정할 개수입니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		SplitsArray SplitReverse(const WString& refer, size_t max = SIZE_MAX)
 		{
 			return SplitReverseHelper(refer.m_ptr, refer.m_length, max);
@@ -1170,7 +1630,7 @@ namespace Utility {
 			size_t lefts = FindFirst(left, starts);
 			size_t rights = FindFirst(right, lefts);
 
-            if ( (lefts != error) && (rights != error) )
+            if ( (lefts == error) || (rights == error) )
                 return WString();
 
             lefts += llen;
@@ -1224,29 +1684,69 @@ namespace Utility {
 		}
 
 	public:
-
-		// left와 right 사이에 있는 문자열을 가져옵니다.
+        
+        /**
+         *  @brief  지정된 두 문자열 사이의 문자열을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자열입니다.
+         *  @param  right 지정할 두 번째 문자열입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *
+         *  이 함수는 throw되지 않으며, 실패시 빈 문자열을 반환합니다.
+         */
 		WString Between(const WString& left, const WString& right, size_t starts = 0)
 		{
 			return BetweenHelper(left.m_ptr, left.m_length, right.m_ptr, right.m_length, starts);
 		}
-
+        
+        /**
+         *  @brief  지정된 두 문자열 사이의 문자열을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자열입니다.
+         *  @param  right 지정할 두 번째 문자열입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *
+         *  이 함수는 throw되지 않으며, 실패시 빈 문자열을 반환합니다.
+         */
 		WString Between(const wchar_t *left, const wchar_t *right, size_t starts = 0)
 		{
 			return BetweenHelper(left, wcslen(left), right, wcslen(right), starts);
 		}
 		
-		// left와 right 사이에 있는 문자열들을 가져옵니다.
+        /**
+         *  @brief  지정된 두 문자열 사이의 문자열들의 집합을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자열입니다.
+         *  @param  right 지정할 두 번째 문자열입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 함수는 게으른탐색법을 기반으로 작성되었습니다.
+         */
 		SplitsArray Betweens(const WString& left, const WString& right, size_t starts = 0)
 		{
 			return BetweensHelper(left.m_ptr, left.m_length, right.m_ptr, right.m_length, starts);
 		}
-
+        
+        /**
+         *  @brief  지정된 두 문자열 사이의 문자열들의 집합을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자열입니다.
+         *  @param  right 지정할 두 번째 문자열입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *
+         *  이 함수는 게으른탐색법을 이용합니다.
+         */
 		SplitsArray Betweens(const wchar_t *left, const wchar_t *right, size_t starts = 0)
 		{
 			return BetweensHelper(left, wcslen(left), right, wcslen(right), starts);
 		}
-
+        
+        /**
+         *  @brief  지정된 두 문자 사이의 문자열을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자입니다.
+         *  @param  right 지정할 두 번째 문자입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *
+         *  이 함수는 throw되지 않으며, 실패시 빈 문자열을 반환합니다.
+         */
 		WString Between(wchar_t left, wchar_t right, size_t starts = 0)
 		{
 			if (starts >= m_length)
@@ -1260,8 +1760,17 @@ namespace Utility {
 
 			return (lefts != error) && (rights != error) ? Slice(lefts, rights - 1) : WString();
 		}
-
-		// 너무 커진 복사...
+        
+        /**
+         *  @brief  지정된 두 문자 사이의 문자열들의 집합을 가져옵니다.
+         *  @param  left 지정할 첫 번째 문자입니다.
+         *  @param  right 지정할 두 번째 문자입니다.
+         *  @param  starts 검사할 문자열의 시작위치를 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 함수는 게으른탐색법을 기반으로 작성되었습니다.
+         */
 		SplitsArray Betweens(wchar_t left, wchar_t right, size_t starts = 0)
 		{
 			if (starts >= m_length)
@@ -1299,8 +1808,10 @@ namespace Utility {
 			
 			return SplitsArray(n, count);
 		}
-
-		// 문자열 집합을 소문자로 변환한 집합을 가져옵니다.
+        
+        /**
+         *  @brief  문자열에 포함된 모든 문자를 소문자로 변환한 문자열을 가져옵니다.
+         */
 		WString ToLower()
 		{
 			wchar_t *ret = new wchar_t[m_length + 1];
@@ -1310,7 +1821,9 @@ namespace Utility {
 			return WString(ret, m_length, with);
 		}
 		
-		// 문자열 집합을 대문자로 변환한 집합을 가져옵니다.
+        /**
+         *  @brief  문자열에 포함된 모든 문자를 대문자로 변환한 문자열을 가져옵니다.
+         */
 		WString ToUpper()
 		{
 			wchar_t *ret = new wchar_t[m_length + 1];
@@ -1320,16 +1833,19 @@ namespace Utility {
 			return WString(ret, m_length, with);
 		}
 
-		// 첫 번재 문자를 대문자로 치환한 문자열을 반환합니다.
-		// (모든 단어에 적용하려면 Title함수를 이용하십시오)
+        /**
+         *  @brief  첫 번째 문자를 대문자로 변환한 문자열을 반환합니다.
+         */
 		WString Capitalize()
 		{
 			wchar_t *ret = this->ToArray();
 			*ret = towupper(*ret);
 			return WString(ret, m_length, with);
 		}
-
-		// 모든 단어의 첫 번째 문자를 대문자로 치환한 문자열을 반환합니다.
+        
+        /**
+         *  @brief  모든 단어의 첫 번째 문자를 대문자로 변환한 문자열을 반환합니다.
+         */
 		WString Title()
 		{
 			wchar_t *ret = this->ToArray();
@@ -1356,20 +1872,32 @@ namespace Utility {
 		}
 		
 	public:
-
-		// 문자열 집합의 시작 부분이 상대 문자열과 일치하는지 확인합니다.
-		// starts는 EndsWith를 검색을 시작할 첫 번째 위치입니다.
+        
+        /**
+         *  @brief  문자열의 시작 부분이 지정된 문자열과 일치하는지의 여부를 가져옵니다.
+         *  @param  str 지정할 문자열입니다.
+         *  @param  starts 시작부분을 지정합니다.
+         */
 		bool StartsWith(const wchar_t *str, size_t starts = 0) const
 		{
 			return StartsWithHelper(str, starts, wcslen(str));
 		}
 		
+        /**
+         *  @brief  문자열의 시작 부분이 지정된 문자열과 일치하는지의 여부를 가져옵니다.
+         *  @param  refer 지정할 문자열입니다.
+         *  @param  starts 시작부분을 지정합니다.
+         */
 		bool StartsWith(const WString& refer, size_t starts = 0) const
 		{
 			return StartsWithHelper(refer.m_ptr, starts, refer.m_length);
 		}
-
-		// 이걸 사용하려는 사람의 심리는?
+        
+        /**
+         *  @brief  문자열의 시작 부분이 지정된 문자와 일치하는지의 여부를 가져옵니다.
+         *  @param  ch 지정할 문자입니다.
+         *  @param  starts 시작부분을 지정합니다.
+         */
 		bool StartsWith(const wchar_t ch, size_t starts) const
 		{
 			if (starts >= m_length)
@@ -1377,7 +1905,11 @@ namespace Utility {
 
 			return m_ptr[starts] == ch;
 		}
-
+        
+        /**
+         *  @brief  문자열의 시작 부분이 지정된 문자와 일치하는지의 여부를 가져옵니다.
+         *  @param  ch 지정할 문자입니다.
+         */
 		inline bool StartsWith(const wchar_t ch) const
 		{
 			return *m_ptr == ch;
@@ -1397,20 +1929,38 @@ namespace Utility {
 		}
 
 	public:
-
-		// 문자열 집합의 끝 부분이 상대 문자열과 일치하는지 확인합니다. 
-		// ends는 EndsWith를 검색을 시작할 마지막 위치입니다.
+        
+        /**
+         *  @brief  문자열의 끝 부분이 지정된 문자열과 일치하는지의 여부를 가져옵니다.
+         *  @param  str 지정할 문자열입니다.
+         *  @param  ends 검색을 시작할 마지막 위치를 지정합니다.
+         *
+         *  이 함수의 매개변수 ends는 끝 부분에서부터 시작할 위치를 가리킵니다.
+         */
 		bool EndsWith(const wchar_t *str, size_t ends = 0) const
 		{
 			return EndsWithHelper(str, ends, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열의 끝 부분이 지정된 문자열과 일치하는지의 여부를 가져옵니다.
+         *  @param  refer 지정할 문자열입니다.
+         *  @param  ends 검색을 시작할 마지막 위치를 지정합니다.
+         *
+         *  이 함수의 매개변수 ends는 끝 부분에서부터 시작할 위치를 가리킵니다.
+         */
 		bool EndsWith(const WString& refer, size_t ends = 0) const
 		{
 			return EndsWithHelper(refer.m_ptr, ends, refer.m_length);
 		}
-
-		// 이건 나름대로 쓸데가 있음
+        
+        /**
+         *  @brief  문자열의 끝 부분이 지정된 문자와 일치하는지의 여부를 가져옵니다.
+         *  @param  ch 지정할 문자입니다.
+         *  @param  ends 검색을 시작할 마지막 위치를 지정합니다.
+         *
+         *  이 함수의 매개변수 ends는 끝 부분에서부터 시작할 위치를 가리킵니다.
+         */
 		inline bool EndsWith(const wchar_t ch, size_t ends) const
 		{
 			if (ends >= m_length)
@@ -1418,15 +1968,23 @@ namespace Utility {
 
 			return *(m_last - ends) == ch;
 		}
-
+        
+        /**
+         *  @brief  문자열의 끝 부분이 지정된 문자와 일치하는지의 여부를 가져옵니다.
+         *  @param  ch 지정할 문자입니다.
+         */
 		inline bool EndsWith(const wchar_t ch) const
 		{
 			return *m_last == ch;
 		}
-
-		// 문자열 집합의 크기를 len만큼 설정하고 원래의 것을 오른쪽으로 
-		// 정렬한뒤 남은 왼쪽 공간에 pad를 삽입한 문자열 집합을 가져옵니다.
-		// len이 문자열의 크기보다 작은 경우 문자열 집합의 복사본을 가져옵니다.
+        
+        /**
+         *  @brief  문자열 집합의 크기를 지정된 크기만큼 설정하고 원래의 것을 오른쪽으로 
+         *          정렬한뒤 남은 왼쪽 공간에 지정된 문자를 삽입한 문자열 집합을 가져옵니다.
+         *  @param  len 지정할 크기입니다.
+         *  @param  pad 지정할 문자입니다.
+         *  @return len이 문자열의 크기보다 작은 경우 문자열 집합의 복사본을 가져옵니다.
+         */
 		WString PadLeft(size_t len, wchar_t pad = L' ')
 		{
 			if (len > m_length)
@@ -1447,9 +2005,13 @@ namespace Utility {
 			}
 		}
 		
-		// 문자열 집합의 크기를 len만큼 설정하고 원래의 것을 왼쪽으로 
-		// 정렬한뒤 남은 오른쪽 공간에 pad를 삽입한 문자열 집합을 가져옵니다.
-		// len이 문자열의 크기보다 작은 경우 문자열 집합의 복사본을 가져옵니다.
+        /**
+         *  @brief  문자열 집합의 크기를 지정된 크기만큼 설정하고 원래의 것을 왼쪽으로 
+         *          정렬한뒤 남은 오른쪽 공간에 지정된 문자를 삽입한 문자열 집합을 가져옵니다.
+         *  @param  len 지정할 크기입니다.
+         *  @param  pad 지정할 문자입니다.
+         *  @return len이 문자열의 크기보다 작은 경우 문자열 집합의 복사본을 가져옵니다.
+         */
 		WString PadRight(size_t len, wchar_t pad = L' ')
 		{
 			if (len > m_length)
@@ -1468,7 +2030,15 @@ namespace Utility {
 				return WString((const wchar_t *)m_ptr, m_length);
 			}
 		}
-
+        
+        /**
+         *  @brief  문자열 집합의 크기를 지정된 크기만큼 설정하고 원래의 것을 가운데로
+         *          정렬한뒤 남은 양쪽 공간에 지정된 문자를 삽입한 문자열 집합을 가져옵니다.
+         *  @param  len 지정할 크기입니다.
+         *  @param  pad 지정할 문자입니다.
+         *  @param  lefts 남은 영역이 홀수만큼인경우 왼쪽을 더 길게할지의 여부를 설정합니다.
+         *  @return len이 문자열의 크기보다 작은 경우 문자열 집합의 복사본을 가져옵니다.
+         */
 		WString PadCenter(size_t len, wchar_t pad = L' ', bool lefts = true)
 		{
 			if (len > m_length)
@@ -1544,35 +2114,81 @@ namespace Utility {
 
 	public:
 		
-		// 왼쪽 부터 separation만큼 띄어 ptr를 삽입합니다.
-		// 가령 InsertLeft(3, L"++", 2)의 경우
-		// 1234567890 => 123++456++789++0 으로 변환됨
-		// (맨 마지막 항목엔 추가 안됨)
+        /**
+         *  @brief  문자열의 왼쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자열을
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  str 지정할 문자열입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertLeft(3, L"++")를 사용할 경우
+         *       "123++456++789++0"으로 출력됨.
+         *  마지막 항목엔 지정된 문자열을 추가하지 않습니다.
+         */
 		WString InsertLeft(size_t separation, const wchar_t *str)
 		{
 			return InsertLeftHelper(separation, str, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열의 왼쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자열을
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  refer 지정할 문자열입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertLeft(3, L"++")를 사용할 경우
+         *       "123++456++789++0"으로 출력됨.
+         *  마지막 항목엔 지정된 문자열을 추가하지 않습니다.
+         */
 		WString InsertLeft(size_t separation, const WString& refer)
 		{
 			return InsertLeftHelper(separation, refer.m_ptr, refer.m_length);
 		}
 		
-		// 오른족 부터 separation만큼 띄어 ptr를 삽입합니다.
-		// 가령 InsertRight(3, L"++", 2)의 경우
-		// 1234567890 => 1++234++567++890 으로 변환됨
-		// (맨 마지막 항목엔 추가 안됨)
+        /**
+         *  @brief  문자열의 오른쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자열을
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  str 지정할 문자열입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertRight(3, L",")를 사용할 경우
+         *       "1,234,567,890"으로 출력됨.
+         *  마지막 항목엔 지정된 문자열을 추가하지 않습니다.
+         */
 		WString InsertRight(size_t separation, const wchar_t *str)
 		{
 			return InsertRightHelper(separation, str, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열의 오른쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자열을
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  refer 지정할 문자열입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertRight(3, L",")를 사용할 경우
+         *       "1,234,567,890"으로 출력됨.
+         *  마지막 항목엔 지정된 문자열을 추가하지 않습니다.
+         */
 		WString InsertRight(size_t separation, const WString& refer)
 		{
 			return InsertRightHelper(separation, refer.m_ptr, refer.m_length);
 		}
-
-		// 이런 함수들은 숫자에 쉼표찍을 때만 쓰일듯
+        
+        /**
+         *  @brief  문자열의 왼쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자를
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  ch 지정할 문자입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertLeft(2, L'%')를 사용할 경우
+         *       "12%34%56%78%90"으로 출력됨.
+         *  마지막 항목엔 지정된 문자를 추가하지 않습니다.
+         */
 		WString InsertLeft(size_t separation, wchar_t ch)
 		{
 			size_t   sizeof_diff = (m_length - 1) / separation;
@@ -1594,7 +2210,18 @@ namespace Utility {
 
 			return WString(totalString, len, with);
 		}
-
+        
+        /**
+         *  @brief  문자열의 오른쪽부터 지정된 크기만큼 문자를 건너뛰면서 지정된 문자를
+         *          삽입한 문자열을 가져옵니다.
+         *  @param  separation 지정할 크기입니다.
+         *  @param  ch 지정할 문자입니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  예제> "1234567890" 에서 InsertRight(3, L',')를 사용할 경우
+         *       "1,234,567,890"으로 출력됨.
+         *  마지막 항목엔 지정된 문자를 추가하지 않습니다.
+         */
 		WString InsertRight(size_t separation, wchar_t ch)
 		{
 			size_t   sizeof_diff = (m_length - 1) / separation;
@@ -1727,22 +2354,66 @@ namespace Utility {
         }
 
 	public:
-
+        
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 지정된 문자열로 치환합니다.
+         *  @param  src 어떤 문자열을 바꿀 것인지 지정합니다.
+         *  @param  dest 어떤 문자열로 바꿀 것인지 지정합니다.
+         *  @param  max 바꿀 횟수를 지정합니다.
+         *
+         *  이 클래스는 문자열 치환을 Replace와 ReplaceSlow의 두 가지 형식으로 제공합니다.
+         *  Replace는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, ReplaceSlow는
+         *  Replace와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		WString Replace(const wchar_t *src, const wchar_t *dest, size_t max = SIZE_MAX)
 		{
 			return ReplaceHelper(src, dest, wcslen(src), wcslen(dest), max);
 		}
-
+        
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 지정된 문자열로 치환합니다.
+         *  @param  refer0 어떤 문자열을 바꿀 것인지 지정합니다.
+         *  @param  refer1 어떤 문자열로 바꿀 것인지 지정합니다.
+         *  @param  max 바꿀 횟수를 지정합니다.
+         *
+         *  이 클래스는 문자열 치환을 Replace와 ReplaceSlow의 두 가지 형식으로 제공합니다.
+         *  Replace는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, ReplaceSlow는
+         *  Replace와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		WString Replace(const WString& refer0, const WString& refer1, size_t max = SIZE_MAX)
 		{
 			return ReplaceHelper(refer0.m_ptr, refer1.m_ptr, refer0.m_length, refer1.m_length, max);
 		}
         
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 지정된 문자열로 치환합니다.
+         *  @param  src 어떤 문자열을 바꿀 것인지 지정합니다.
+         *  @param  dest 어떤 문자열로 바꿀 것인지 지정합니다.
+         *  @param  max 바꿀 횟수를 지정합니다.
+         *
+         *  이 클래스는 문자열 치환을 Replace와 ReplaceSlow의 두 가지 형식으로 제공합니다.
+         *  Replace는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, ReplaceSlow는
+         *  Replace와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		WString ReplaceSlow(const wchar_t *src, const wchar_t *dest, size_t max = SIZE_MAX)
 		{
 			return ReplaceSlowHelper(src, dest, wcslen(src), wcslen(dest), max);
 		}
-
+        
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 지정된 문자열로 치환합니다.
+         *  @param  refer0 어떤 문자열을 바꿀 것인지 지정합니다.
+         *  @param  refer1 어떤 문자열로 바꿀 것인지 지정합니다.
+         *  @param  max 바꿀 횟수를 지정합니다.
+         *
+         *  이 클래스는 문자열 치환을 Replace와 ReplaceSlow의 두 가지 형식으로 제공합니다.
+         *  Replace는 메모리를 두 배로 사용하는 대신 처리속도는 빠르며, ReplaceSlow는
+         *  Replace와 달리 메모리를 정량만 사용하며, 처리속도는 느립니다.
+         *  자세한 사항은 제공된 소스코드를 참고하시거나 작성자에게 문의하십시오.
+         */
 		WString ReplaceSlow(const WString& refer0, const WString& refer1, size_t max = SIZE_MAX)
 		{
 			return ReplaceSlowHelper(refer0.m_ptr, refer1.m_ptr, refer0.m_length, refer1.m_length, max);
@@ -1804,31 +2475,47 @@ namespace Utility {
         }
         
 	public:
-
-		// 포함된 문자열 삭제
+        
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 삭제합니다.
+         *  @param  src 삭제할 문자열을 지정합니다.
+         */
 		WString Trim(const wchar_t *src)
 		{
 			return TrimHelper(src, wcslen(src), SIZE_MAX);
 		}
 		
+        /**
+         *  @brief  문자열에 포함된 특정 문자열을 삭제합니다.
+         *  @param  refer 삭제할 문자열을 지정합니다.
+         */
 		WString Trim(const WString& refer)
 		{
 			return TrimHelper(refer.m_ptr, refer.m_length, SIZE_MAX);
 		}
-
-		// 문자열 집합의 처음부터 index까지 포함하는 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  문자열의 시작부분부터 지정된 크기만큼의 문자열을 가져옵니다.
+         *  @param  len 가져올 문자열의 크기를 지정합니다.
+         */
 		WString Remove(size_t len)
-		{
+		{ // 문자열 집합의 처음부터 index까지 포함하는 문자열 집합을 가져옵니다.
 			if (len >= m_length) // exceptrion from this method
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
 			return this->Substring(0, len);
 		}
-
-		// 문자열 집합의 starts 위치 부터 count 만큼을 포함하는 집합과 문자열
-		// 집합의 차집합을 가져옵니다. (바깥 블록)
+        
+        /**
+         *  @brief  문자열의 지정된 부분부터 지정된 크기만큼의 문자를 삭제한 
+         *          문자열을 가져옵니다.
+         *  @param  starts 삭제할 부분의 시작위치를 지정합니다.
+         *  @param  len 삭제할 부분의 크기를 지정합니다.
+         */
 		WString Remove(size_t starts, size_t len)
 		{
+            // 문자열 집합의 starts 위치 부터 count 만큼을 포함하는 집합과 문자열
+		    // 집합의 차집합을 가져옵니다. (바깥 블록)
 			if (starts + len > m_length) // exceptrion from this method
 				throw(new StringException(StringErrorCode::ComparasionSizeException));
 
@@ -1842,7 +2529,11 @@ namespace Utility {
 
 			return WString(newString, retlen, with);
 		}
-
+        
+        /**
+         *  @brief  문자열의 끝부분부터 지정된 크기만큼의 문자열을 가져옵니다.
+         *  @param  len 가져올 문자열의 크기를 지정합니다.
+         */
 		WString RemoveReverse(size_t len)
 		{
 			if (len >= m_length) // exceptrion from this method
@@ -1850,7 +2541,14 @@ namespace Utility {
 
 			return this->SubstringReverse(0, len);
 		}
-
+        
+        /**
+         *  @brief  문자열의 지정된 부분부터 지정된 크기만큼의 문자를 삭제한 
+         *          문자열을 가져옵니다.
+         *  @param  starts 삭제할 부분의 시작위치를 지정합니다. 이 위치는
+         *          문자열의 끝 부분부터 계산됩니다.
+         *  @param  len 삭제할 부분의 크기를 지정합니다.
+         */
 		WString RemoveReverse(size_t starts, size_t len)
 		{
 			if (starts + len > m_length) // exceptrion from this method
@@ -1858,9 +2556,15 @@ namespace Utility {
 
 			return this->Remove(m_length - starts - len, len);
 		}
-
-		// 문자열 집합의 starts인덱스 부터 str를 len만큼의 길이를 추가 시킨
-		// 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  문자열의 특정부분에 문자열을 삽입합니다.
+         *  @param  starts 삽입할 부분의 시작위치를 지정합니다.
+         *  @param  str 삽입할 문자열을 지정합니다.
+         *  @param  len 삽입할 문자열의 크기를 지정합니다.
+         *
+         *  이 함수의 매개변수 len은 str의 길이보다 짧거나 같아야합니다.
+         */
 		WString Insert(size_t starts, const wchar_t *str, size_t len)
 		{
 			// wchar_t에 대한 오버로딩은 템플릿까지 사용해야하므로
@@ -1886,23 +2590,44 @@ namespace Utility {
 			
 			return WString(newString, newLen, with);
 		}
-
+        
+        /**
+         *  @brief  문자열의 특정부분에 문자열을 삽입합니다.
+         *  @param  starts 삽입할 부분의 시작위치를 지정합니다.
+         *  @param  refer 삽입할 문자열을 지정합니다.
+         *  @param  len 삽입할 문자열의 크기를 지정합니다.
+         *
+         *  이 함수의 매개변수 len은 refer의 길이보다 짧거나 같아야합니다.
+         */
 		WString Insert(size_t starts, const WString& refer, size_t len)
 		{
 			return Insert(starts, refer.m_ptr, len);
 		}
-
+        
+        /**
+         *  @brief  문자열의 특정부분에 문자열을 삽입합니다.
+         *  @param  starts 삽입할 부분의 시작위치를 지정합니다.
+         *  @param  str 삽입할 문자열을 지정합니다.
+         */
 		WString Insert(size_t starts, const wchar_t *str)
 		{
 			return Insert(starts, str, wcslen(str));
 		}
-
+        
+        /**
+         *  @brief  문자열의 특정부분에 문자열을 삽입합니다.
+         *  @param  starts 삽입할 부분의 시작위치를 지정합니다.
+         *  @param  refer 삽입할 문자열을 지정합니다.
+         */
 		WString Insert(size_t starts, const WString& refer)
 		{
 			return Insert(starts, refer.m_ptr, refer.m_length);
 		}
-
-		// 문자열 집합을 count배수만큼 늘린 문자열 집합을 가져옵니다.
+        
+        /**
+         *  @brief  문자열을 지정된 횟수만큼 늘립니다.
+         *  @param  count 늘릴 횟수를 지정합니다.
+         */
 		WString Repeat(size_t count)
 		{
 			size_t newLen = count * m_length;
@@ -1918,8 +2643,10 @@ namespace Utility {
 			
 			return WString(newString, newLen, with);
 		}
-
-		// 뒤집은 문자열을 가져옵니다.
+        
+        /**
+         *  @brief  문자열을 뒤집습니다.
+         */
 		WString Reverse()
 		{
 			wchar_t *ret = this->ToArray();
@@ -1927,8 +2654,13 @@ namespace Utility {
 			return WString(ret, m_length, with);
 		}
 		
-		// [first, last]를 가져옵니다.
-		// (단, last가 0보다 작거나 같을 경우 뒤에서 부터 가져옴)
+        /**
+         *  @brief  문자열의 일부를 가져옵니다.
+         *  @param  first 가져올 문자열의 를 지정합니다.
+         *  @param  last 가져올 문자열의 끝위치를 지정합니다.
+         *
+         *  이 함수의 매개변수 last가 0보다 작을 경우 뒤에서부터 가져옵니다.
+         */
 		WString Slice(size_t first, size_t last)
 		{
 			size_t pure = (int)last > 0 ? last : ~last + 1;
@@ -1945,7 +2677,13 @@ namespace Utility {
 			}
 		}
 
-		// skip ~ - skip 만큼 가져온다
+        /**
+         *  @brief  문자열의 일부를 가져옵니다.
+         *  @param  skip 가져올 문자열의 위치를 지정합니다.
+         *
+         *  이 함수는 문자열의 양 끝 부터 skip만큼 떨어진 부분까지 삭제한 문자열을
+         *  가져옵니다.
+         */
 		WString Slice(size_t skip)
 		{
 			if ((skip << 1) > m_length)
@@ -1953,7 +2691,22 @@ namespace Utility {
 
 			return WString((const wchar_t *)(m_ptr + skip), m_length - (skip << 1));
 		}
-
+        
+        /**
+         *  @brief  지정된 크기만큼 건너뛴 문자열을 가져옵니다.
+         *  @param  jmp 건너뛸 크기를 지정합니다.
+         *  @param  starts 검색할 시작위치를 지정합니다.
+         *  @param  len 건너뛴 후 가져올 문자열의 크기를 지정합니다.
+         *  @param  remain 마지막 항목이 지정된 틀에 맞지 않은 경우 해당 문자열을 
+         *          가져올지의 여부를 지정합니다.
+         *
+         *  이 함수를 사용하는 경우에 다음 예제를 참고하십시오.
+         *  WString("01234567").Slicing(1); // -> "0246"
+         *  WString("%0123456").Slicing(1,1); // -> "0246"
+         *  WString("%01%23%45%67").Slicing(1,1,2); // -> "01234567"
+         *  WString("%01%23%45%6789").Slicing(1,1,2); // -> "012345679"
+         *  WString("%01%23%45%6789").Slicing(1,1,2,false); // -> "01234567"
+         */
 		WString Slicing(size_t jmp, size_t starts = 0, size_t len = 1, bool remain = true)
 		{
 			size_t   searchLen = m_length - starts;
@@ -2044,37 +2797,78 @@ namespace Utility {
 		}
 
 	public:
-
-		// len만큼 자른 문자열들을 가져옵니다.
+        
+        /**
+         *  @brief  지정된 크기만큼 잘라 개행문자를 삽입한 문자열 집합을 가져옵니다.
+         *  @param  len 자를 문자열의 크기를 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(size_t len)
 		{
 			return LineSplitHelper(len, nullptr, 0, nullptr, 0);
 		}
 		
-		// len만큼 자른 문자열에서 문자열 앞에 front를 추가한 문자열들을 가져옵니다.
+        /**
+         *  @brief  지정된 크기만큼 잘라 개행문자를 삽입한 뒤 지정된 문자열을
+         *          각 문자열 행 앞에 삽입한 문자열 집합을 가져옵니다. 
+         *  @param  len 자를 문자열의 크기를 지정합니다.
+         *  @param  front 앞에 삽입할 문자열을 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(size_t len, const WString& front)
 		{
 			return LineSplitHelper(len, front.Reference(), front.m_length, nullptr, 0);
 		}
-
+        
+        /**
+         *  @brief  지정된 크기만큼 잘라 개행문자를 삽입한 뒤 지정된 문자열을
+         *          각 문자열 행 앞에 삽입한 문자열 집합을 가져옵니다. 
+         *  @param  len 자를 문자열의 크기를 지정합니다.
+         *  @param  front 앞에 삽입할 문자열을 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(size_t len, const wchar_t *front)
 		{
 			return LineSplitHelper(len, front, wcslen(front), nullptr, 0);
 		}
 		
-		// len만큼 자른 문자열에서 문자열 앞에 front를, 뒤엔 end를 추가한 문자열들을 가져옵니다.
+        /**
+         *  @brief  지정된 크기만큼 잘라 개행문자를 삽입한 뒤 지정된 문자열을
+         *          각각 문자열 행 앞, 뒤에 삽입한 문자열 집합을 가져옵니다. 
+         *  @param  len 자를 문자열의 크기를 지정합니다.
+         *  @param  front 앞에 삽입할 문자열을 지정합니다.
+         *  @param  end 뒤에 삽입할 문자열을 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(size_t len, const WString& front, const WString& end)
 		{
 			return LineSplitHelper(len, front.Reference(), front.m_length, end.Reference(), end.m_length);
 		}
-
+        
+        /**
+         *  @brief  지정된 크기만큼 잘라 개행문자를 삽입한 뒤 지정된 문자열을
+         *          각각 문자열 행 앞, 뒤에 삽입한 문자열 집합을 가져옵니다. 
+         *  @param  len 자를 문자열의 크기를 지정합니다.
+         *  @param  front 앞에 삽입할 문자열을 지정합니다.
+         *  @param  end 뒤에 삽입할 문자열을 지정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(size_t len, const wchar_t *front, const wchar_t *end)
 		{
 			return LineSplitHelper(len, front, wcslen(front), end, wcslen(end));
 		}
 		
-		// \r\n 또는 \n를 구분자로 하여 자른 문자열들을 가져옵니다.
-		// (last == ture인 경우 마지막 줄이 비어있으면 출력하지 않습니다.)
+        /**
+         *  @brief  \r\n 또는 \n를 구분자로 하여 자른 문자열들을 가져옵니다.
+         *  @param  last 마지막 줄이 비어있으면 출력할지의 여부를 설정합니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         */
 		Lines LineSplit(bool last = false)
 		{
 			wchar_t      **position = new wchar_t*[m_length];
@@ -2119,8 +2913,13 @@ namespace Utility {
 
 			return SplitsArray (n, szTotal);
 		}
-
-		// 한 줄 당 len만큼의 문자수로 분할한 문자열들을 가져옵니다.
+        
+        /**
+         *  @brief  한 줄 당 len만큼의 문자수로 분할하고 개행문자를 삽입한 
+         *          문자열들을 가져옵니다.
+         *
+         *  이 함수에서 개행문자로 \r\n을 사용합니다.
+         */
 		WString LineBreak(size_t len)
 		{
 			size_t remainLen = m_length % len;         // 맨 마지막 줄에 남은 문자 수
@@ -2167,7 +2966,12 @@ namespace Utility {
 
 			return WString(origin, totalLen, with);
 		}
-
+        
+        /**
+         *  @brief  문자열의 해시값을 계산합니다.
+         *
+         *  이 함수는 성능과 보안에 문제가 있을 수 있습니다.
+         */
 		uint64_t Hash(uint64_t seed = 0x8538dcfb7617fe9f) const
 		{
 			uint64_t num_hash = seed;
@@ -2182,8 +2986,11 @@ namespace Utility {
 
 			return num_hash * ((seed << 16) + (num_hash >> 16) + (num_hash << 32));
 		}
-
-		// 문자열이 수인지 확인합니다.
+        
+        /**
+         *  @brief  문자열이 c언어에서 제공하는 십진 숫자로 바꿀 수 있는지의
+         *          여부를 가져옵니다.
+         */
 		bool IsNumeric() const
 		{
 			const wchar_t *ptr = m_ptr;
@@ -2213,7 +3020,11 @@ namespace Utility {
 
 			return *ptr == 0;
 		}
-
+        
+        /**
+         *  @brief  문자열이 c언어에서 제공하는 16진법 숫자로 바꿀 수 있는지의
+         *          여부를 가져옵니다.
+         */
 		bool IsHexDigit() const
 		{
 			const wchar_t *ptr = m_ptr;
@@ -2226,7 +3037,10 @@ namespace Utility {
 
 			return *ptr == 0;
 		}
-
+        
+        /**
+         *  @brief  16진수인 문자열을 숫자로 바꾼 수를 출력합니다.
+         */
 		unsigned long long int ToHexDigit() const
 		{
 			unsigned long long int ret = 0;
@@ -2245,8 +3059,13 @@ namespace Utility {
 
 			return ret;
 		}
-
-		// 문자열을 문자로 변환합니다.
+        
+        /**
+         *  @brief  문자열을 문자로 변환합니다.
+         *  @return 문자열 집합의 첫 요소를 반환합니다.
+         *  @throw  문자열의 크기가 1이여야하며, 그렇지 않을 경우
+         *          StringErrorCode::OverflowReferenceException로 throw됩니다.
+         */
 		inline wchar_t ToChar() const
 		{
 			if (m_length != 1)
@@ -2254,8 +3073,10 @@ namespace Utility {
 
 			return m_ptr[0];
 		}
-
-		// 문자열을 정수로 변환합니다.
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		long long int ToLongLong() const
 		{
 			long long int ret = 0, mark = 1;
@@ -2271,7 +3092,10 @@ namespace Utility {
 
 			return ret * mark;
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		unsigned long long int ToULongLong() const
 		{
 			long long int ret = 0;
@@ -2285,32 +3109,50 @@ namespace Utility {
 
 			return ret;
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		long int ToLong() const
 		{
 			return (long)ToLongLong();
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		unsigned long int ToULong() const
 		{
 			return (unsigned long)ToULongLong();
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		int ToInteger() const
 		{
 			return (int)ToLongLong();
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		unsigned int ToUInteger() const
 		{
 			return (int)ToULongLong();
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		short int ToShort() const
 		{
 			return (short)ToLongLong();
 		}
-
+        
+        /**
+         *  @brief  10진 정수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		unsigned short int ToUShort() const
 		{
 			return (unsigned)ToULongLong();
@@ -2354,47 +3196,72 @@ namespace Utility {
 		}
 
 	public:
-
-		// 문자열을 실수로 변환합니다.
+        
+        /**
+         *  @brief  10진 실수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		long double ToLongDouble() const
 		{
 			return ToLongDoubleHelper(m_ptr);
 		}
-
+        
+        /**
+         *  @brief  10진 실수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		double ToDouble() const
 		{
 			return (double)ToLongDouble();
 		}
-
+        
+        /**
+         *  @brief  10진 실수로 표현된 문자열을 숫자로 변환합니다.
+         */
 		float ToFloat() const
 		{
 			return (float)ToLongDouble();
 		}
-
+        
+        /**
+         *  @brief  문자열의 복사본을 가져옵니다.
+         */
 		inline wchar_t *ToArray() // 바이트를 쓰려면 이걸 캐스팅하자.
 		{
 			wchar_t *ret = new wchar_t[m_length + 1];
 			memcpy(ret, m_ptr, (m_length + 1) * sizeof(wchar_t));
 			return ret;
 		}
+
+        /**
+         *  @brief  문자열의 복사본을 가져옵니다.
+         */
 		inline const wchar_t *ToArray() const
 		{
 			wchar_t *ret = new wchar_t[m_length + 1];
 			memcpy(ret, m_ptr, (m_length + 1) * sizeof(wchar_t));
 			return ret;
 		}
-
+        
+        /**
+         *  @brief  문자열을 Ansi로 변환한 문자열을 가져옵니다.
+         */
 		char *ToAnsi()
 		{
 			return UnicodeToAnsi();
 		}
-
-		// 이 변환의 최대의 단점은 간단한 방법으론 크기의 예측이 불가능 하다는 것이다.
-		// 이를 해결하려면 이 루프를 두 번돌리거나 bytebuffer를 만드는게 최선일테지만.
-		// 그래서 여기선 두 번의 루프를 돌려 구현하였다.
-		// 윈도우 환경에서만 지원됩니다.
+        
+        /**
+         *  @brief  문자열의 ToUtf8로 변환한 문자열을 가져옵니다.
+         *  @return ReadOnlyArray기반의 배열형식으로 반환합니다. 자세한 사항은
+         *          collection/Array.h를 참고하십시오.
+         *
+         *  이 함수의 반환형식은 바이트배열입니다.
+         */
 		Utf8Array ToUtf8(bool file_bom = false)
 		{
+		    // 이 변환의 최대의 단점은 간단한 방법으론 크기의 예측이 불가능 하다는 것이다.
+		    // 이를 해결하려면 이 루프를 두 번돌리거나 bytebuffer를 만드는게 최선일테지만.
+		    // 그래서 여기선 두 번의 루프를 돌려 구현하였다.
+		    // 윈도우 환경에서만 지원된다.
 			size_t szReal = file_bom + (file_bom << 1);
 			size_t size = szReal + m_length;
 			unsigned long *tmp = new unsigned long[size];
@@ -2455,41 +3322,68 @@ namespace Utility {
 
 			return Utf8Array(bytes, szReal);
 		}
-
+        
+        /**
+         *  @brief  두 문자열을 결합합니다.
+         */
 		WString operator&(const WString& concat)
 		{
 			return this->Concat(*this, concat);
 		}
+
+        /**
+         *  @brief  두 문자열을 결합합니다.
+         */
 		WString operator+(const WString& concat)
 		{
 			return this->Concat(*this, concat);
 		}
-
-		// 문자열 비교
+        
+        /**
+         *  @brief  두 문자열을 비교합니다.
+         */
 		inline bool operator>(const WString& compare)
 		{
 			return wcscmp(m_ptr, compare.m_ptr) > 0;
 		}
+
+        /**
+         *  @brief  두 문자열을 비교합니다.
+         */
 		inline bool operator<(const WString& compare)
 		{
 			return wcscmp(m_ptr, compare.m_ptr) < 0;
 		}
+
+        /**
+         *  @brief  두 문자열을 비교합니다.
+         */
 		inline bool operator>=(const WString& compare)
 		{
 			return !this->operator<(compare);
 		}
+
+        /**
+         *  @brief  두 문자열을 비교합니다.
+         */
 		inline bool operator<=(const WString& compare)
 		{
 			return !this->operator>(compare);
 		}
-
+        
+        /**
+         *  @brief  두 문자열을 서로바꿉니다.
+         */
 		inline void Swap(WString& refer)
 		{
 			std::swap(m_ptr, refer.m_ptr);
 			std::swap(m_last, refer.m_last);
 			std::swap(m_length, refer.m_length);
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열을 복사합니다.
+         */
 		void operator=(const WString& refer)
 		{
 			if (m_ptr != nullptr)
@@ -2501,7 +3395,10 @@ namespace Utility {
 				memcpy(m_ptr, refer.m_ptr, (m_length + 1) * sizeof(wchar_t));
 			}
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열의 클론을 만듭니다.
+         */
 		inline void Clone(const WString& refer)
 		{
 			if (m_ptr != nullptr)
@@ -2512,15 +3409,32 @@ namespace Utility {
 			m_last = refer.m_last;
 			m_length = refer.m_length;
 		}
-
+        
+        /**
+         *  @brief  지정된 문자열의 클론을 만듭니다.
+         */
 		inline WString Clone()
 		{
 			WString nstr;
 			nstr.Clone(*this);
 			return nstr;
 		}
+        
+        friend std::wostream& operator<<(std::wostream& os, const WString& refer)
+        {
+            if (refer.Null())
+            {
+                os << L"Null-(0)";
+            }
+            else
+            {
+                os << refer.Reference();
+                return os;
+            }
+        }
 
-		friend std::wostream& operator<<(std::wostream& os, const WString& refer);
+		WString operator+=(const WString&) = delete;
+		WString operator&=(const WString&) = delete;
 
 	private:
 
@@ -2537,6 +3451,7 @@ namespace Utility {
 			m_length = strlen(str);
 			m_ptr = new wchar_t[m_length + 1];
 			size_t converted = 0;
+            // 이거 표준임? 모르겠음
 			mbstowcs_s(&converted, m_ptr, m_length + 1, str, SIZE_MAX);
 		}
 		
@@ -2545,6 +3460,7 @@ namespace Utility {
 			wchar_t *ptr = m_ptr = new wchar_t[len + 1];
 			size_t rlen = len;
 			m_length = len;
+            // ㅋㅋ
 			while (rlen--)
 				*ptr++ = (wchar_t)*ansi++;
 			*ptr = 0;
@@ -2564,10 +3480,17 @@ namespace Utility {
 			return ret;
 		}
 		
+        //
+        //                  * warning *
+        //
+        //  당신은 여기서부터 헤어날 수 없는 시공의 폭풍에 빠지게 됩니다.
+        //  표준에 정의된 온갖 형변환 규칙과 연산 규칙이 당신을 혼돈의
+        //  카오스로 빠지게 할 것 입니다.
+        //
+
 #define _MAGIC	checker_type(~0ULL/0xff)
 #define _WMAGIC	checker_type(~0ULL/0xffff)
 		
-		// src에 포함된 null byte를 찾습니다.
 		inline checker_type HazHelper(checker_type src) const
 		{
 			// 0x0101010101010101
@@ -2575,7 +3498,6 @@ namespace Utility {
 			return (src - ( _MAGIC)) & ((~src & (( _MAGIC) <<  7)));
 		}
 
-		// src에 포함된 null wide byte를 찾습니다.
 		inline checker_type HawzHelper(checker_type src) const
 		{
 			// 0x0001000100010001
@@ -2612,13 +3534,16 @@ namespace Utility {
 			if (!(trim[0] & (checker_type)( 0xffUL << (8 * 0)))) return ((size_t)trim - (size_t)ptr) + 0;
 			if (!(trim[0] & (checker_type)( 0xffUL << (8 * 1)))) return ((size_t)trim - (size_t)ptr) + 1;
 			if (!(trim[0] & (checker_type)( 0xffUL << (8 * 2)))) return ((size_t)trim - (size_t)ptr) + 2;
+            // 제어경로 규칙을 변경해 else로 바꿀 수 있음
 			if (!(trim[0] & (checker_type)( 0xffUL << (8 * 3)))) return ((size_t)trim - (size_t)ptr) + 3;
 #ifdef _X64_MODE
 			if (!(trim[0] & (checker_type)(0xffULL << (8 * 4)))) return ((size_t)trim - (size_t)ptr) + 4;
 			if (!(trim[0] & (checker_type)(0xffULL << (8 * 5)))) return ((size_t)trim - (size_t)ptr) + 5;
 			if (!(trim[0] & (checker_type)(0xffULL << (8 * 6)))) return ((size_t)trim - (size_t)ptr) + 6;
+            // 제어경로 규칙을 변경해 else로 바꿀 수 있음
 			if (!(trim[0] & (checker_type)(0xffULL << (8 * 7)))) return ((size_t)trim - (size_t)ptr) + 7;
 #endif
+            // 제어경로 반환조건을 임의로 설정하지 아니함
 		}
 
 		size_t wcslen(const wchar_t *ptr) const
@@ -2643,11 +3568,14 @@ namespace Utility {
 			}
 			
 			if (!(trim[0] & (checker_type)( 0xffffUL << (16 * 0)))) return (((size_t)trim - (size_t)ptr) >> 1) + 0;
+            // 제어경로 규칙을 변경해 else로 바꿀 수 있음
 			if (!(trim[0] & (checker_type)( 0xffffUL << (16 * 1)))) return (((size_t)trim - (size_t)ptr) >> 1) + 1;
 #ifdef _X64_MODE
 			if (!(trim[0] & (checker_type)(0xffffULL << (16 * 2)))) return (((size_t)trim - (size_t)ptr) >> 1) + 2;
+            // 제어경로 규칙을 변경해 else로 바꿀 수 있음
 			if (!(trim[0] & (checker_type)(0xffffULL << (16 * 3)))) return (((size_t)trim - (size_t)ptr) >> 1) + 3;
 #endif
+            // 제어경로 반환조건을 임의로 설정하지 아니함
 		}
 
 		wchar_t *wcsrnchr(wchar_t *ptr, size_t len, wchar_t ch) const
@@ -2783,17 +3711,17 @@ namespace Utility {
 
 	};
     
-    inline WString operator"" ws(const wchar_t* str, size_t length)
+    inline WString operator"" _ws(const wchar_t* str, size_t length)
     {
         return WString{str, length};
     }
 
-    inline WString operator"" ws(const char* str, size_t length)
+    inline WString operator"" _ws(const char* str, size_t length)
     {
         return WString{str, length};
     }
 
-    inline WString operator"" ws(unsigned long long i)
+    inline WString operator"" _ws(unsigned long long i)
     {
         return WString{i};
     }

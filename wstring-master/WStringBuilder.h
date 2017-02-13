@@ -1,7 +1,7 @@
 /***
 
    RollRat Software Project.
-   Copyright (C) 2015. rollrat. All Rights Reserved.
+   Copyright (C) 2015-2017. rollrat. All Rights Reserved.
 
 File name:
    
@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-   RollRat Library
+   RollRat Framework
 
 Author:
 
@@ -37,6 +37,7 @@ namespace Utility {
 		{
 			size_t                      m_offset;
 			size_t                      m_length;
+            //size_t                      m_capacity;
 			wchar_t                    *m_ptr;
 			struct _WStringBuilderNode *m_next;
 		} WStringBuilderNode;
@@ -152,6 +153,39 @@ namespace Utility {
 			size_t len = wcslen(str);
 			Append(str, len);
 		}
+
+        // 1. capacity보다 dest+{m_ptr-src}가 작다면 사이에 끼워 넣는다.
+        // 2. 그렇지 않다면 3개로 분리한다.
+        void Replace(const WString& src, const WString& dest)
+        {
+			WStringBuilderNode *iter = m_head;
+            for ( ; iter != nullptr; iter = iter->m_next )
+            {
+                const wchar_t *hit;
+                if ( hit = wmemchr(iter->m_ptr, src[0], iter->m_length) )
+                {
+                    //size_t remain_hlen = hit - iter->m_ptr + 1;
+                    //const wchar_t *src_fptr = src.Reference();
+                    //const wchar_t *src_lptr = src.Reference() + src.Length() - 1;
+
+                    //if ( src.Length() <= remain_hlen )
+                    //{
+                    //    if ( src.Length() == remain_hlen )
+                    //    {
+                    //        size_t length = dest.Length() + 
+                    //        //wchar_t *tmp = new wchar_t[dest.Length() + 
+                    //    }
+                    //    else
+                    //    {
+
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //}
+                }
+            }
+        }
 		
 		size_t Length() const
 		{
@@ -180,12 +214,29 @@ namespace Utility {
 			Init();
 		}
 
+        size_t& Capacity()
+        {
+            return capacity;
+        }
+
+        void EnsureCpacity(size_t capacity)
+        {
+            wchar_t *tmp = new wchar_t[capacity];
+
+            memcpy(tmp, m_last->m_ptr, m_last->m_length * sizeof(wchar_t));
+            delete[] m_last->m_ptr;
+
+		    m_last->m_ptr = tmp;
+            //m_last->m_capacity = capacity;
+        }
+
 	private:
 
 		WStringBuilderNode *Create()
 		{
 			WStringBuilderNode *wsbn = new WStringBuilderNode;
 			wsbn->m_length = 0;
+            //wsbn->m_capacity = 0;
 			wsbn->m_ptr = nullptr;
 			wsbn->m_next = nullptr;
 			return wsbn;
@@ -218,6 +269,7 @@ namespace Utility {
 			if (m_last->m_ptr == nullptr)
 			{
 				m_last->m_ptr = new wchar_t[capacity];
+                //m_last->m_capacity = capacity;
 			}
 		}
 

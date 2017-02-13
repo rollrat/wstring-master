@@ -1,7 +1,7 @@
 /***
 
    RollRat Software Project.
-   Copyright (C) 2015. rollrat. All Rights Reserved.
+   Copyright (C) 2015-2017. rollrat. All Rights Reserved.
 
 File name:
    
@@ -9,7 +9,7 @@ File name:
 
 Purpose:
 
-   RollRat Library
+   RollRat Framework
 
 Author:
 
